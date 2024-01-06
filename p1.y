@@ -300,7 +300,7 @@ int evalAST(struct AST* tree, int yylineno)
             char tip[10];
             bzero(&tip, 10);
             strcpy(tip, getIdType(tree->nume));
-            if(!strcmp(tip, "char"))
+            if(!strcmp(tip, "chr"))
             {
                 sprintf(errMsg, "Linia %d: variabila %s este de tip char!", yylineno, tree->nume);
                 print_error();
@@ -314,7 +314,7 @@ int evalAST(struct AST* tree, int yylineno)
                 exit(0);
             }
             else
-            if(!strcmp(tip, "string"))
+            if(!strcmp(tip, "str"))
             {
                 sprintf(errMsg, "Linia %d: variabila %s este de tip string!", yylineno, tree->nume);
                 print_error();
@@ -322,7 +322,7 @@ int evalAST(struct AST* tree, int yylineno)
             }
             else
             {
-                if(!strcmp(tip, "int"))
+                if(!strcmp(tip, "i32"))
                     return getIdValue(tree->nume, yylineno);
             }
         }
@@ -359,13 +359,13 @@ char *TypeOf(struct AST* tree, float nrfloat, int boolval, char sir_str[], char 
     if(tree == NULL)
     {
         if(nrfloat != 0)
-            return (char*)"float";
+            return (char*)"f32";
         if(boolval != 0)
             return (char*)"bool";
         if(strcmp(sir_str, ""))
-            return (char*)"string";
+            return (char*)"str";
         if(strcmp(chr_sir, ""))
-            return (char*)"char";
+            return (char*)"chr";
     }
     else
     {
@@ -376,17 +376,17 @@ char *TypeOf(struct AST* tree, float nrfloat, int boolval, char sir_str[], char 
                 char tip[10];
                 bzero(&tip, 10);
                 strcpy(tip, getIdType(tree->nume));
-                if(!strcmp(tip, "int"))
-                    return (char*)"int";
+                if(!strcmp(tip, "i32"))
+                    return (char*)"i32";
                 if(!strcmp(tip, "bool"))
                     return (char*)"bool";
-                if(!strcmp(tip, "float"))
-                    return (char*)"float";
+                if(!strcmp(tip, "f32"))
+                    return (char*)"f32";
             }
             else
             {
                 int x = evalAST(tree, yylineno);
-                return "int";
+                return "i32";
             }
         }
     }
@@ -429,16 +429,16 @@ void actualizareTabel(char nume[], char tip[], int value, int yylineno, float fv
                 print_error();
                 exit(0);
             }
-            if(!strcmp(tip, "int") || !strcmp(tip, "bool"))
+            if(!strcmp(tip, "i32") || !strcmp(tip, "bool"))
                 symbolTable[i].info.int_val = value;
             else
-                if(!strcmp(tip, "float"))
+                if(!strcmp(tip, "f32"))
                     symbolTable[i].info.float_val = fvalue;
                 else
-                    if(!strcmp(tip, "string"))
+                    if(!strcmp(tip, "str"))
                         strcpy(symbolTable[i].info.string_val, svalue);
                     else
-                        if(!strcmp(tip, "char"))
+                        if(!strcmp(tip, "chr"))
                             symbolTable[i].info.char_val = svalue[1];
             break;
         }
@@ -472,10 +472,10 @@ void printVars(int fd)
         write(fd, sp, strlen(sp));
         write(fd, symbolTable[i].tip, strlen(symbolTable[i].tip));
         write(fd, sp, strlen(sp));
-        if(!strcmp(symbolTable[i].tip, "int")) {snprintf(inf,100,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "string")) {snprintf(inf,500,"%s", symbolTable[i].info.string_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "float")) {snprintf(inf,500,"%f", symbolTable[i].info.float_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "char")) {snprintf(inf,500,"%c", symbolTable[i].info.char_val);write(fd, inf, strlen(inf));}
+        if(!strcmp(symbolTable[i].tip, "i32")) {snprintf(inf,100,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "str")) {snprintf(inf,500,"%s", symbolTable[i].info.string_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "f32")) {snprintf(inf,500,"%f", symbolTable[i].info.float_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "chr")) {snprintf(inf,500,"%c", symbolTable[i].info.char_val);write(fd, inf, strlen(inf));}
         else if(!strcmp(symbolTable[i].tip, "bool")) {snprintf(inf,500,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
         write(fd, "\n", strlen("\n"));
     }
@@ -524,12 +524,12 @@ extern int yylineno;
     struct AST* tree;
 }
 
-%token <strval> LEQ GEQ NEQ EQ RETURN BFCT EFCT
+%token <strval> LESS_EQ GREATER_EQ NOT_EQ EQ RETURN BEGIN_FN END_FN
 %token <strval> AND OR
 %token <strval> ID
 %token <strval> STRING
-%token <strval> TIP ASSIGN BGIN END CLASS ECLASS IF EIF ELSE
-%token <strval> FOR EFOR CONSTANT WHILE EWHILE DO EVAL TYPEOF
+%token <strval> TYPE ASSIGN BEGIN_MAIN END_MAIN BEGIN_CLASS END_CLASS IF END_IF ELSE
+%token <strval> FOR END_FOR CONSTANT WHILE END_WHILE DO EVAL TYPEOF
 %token <strval> CHAR
 %token <intval> NR
 %token <floatval> NR_FLOAT
@@ -543,8 +543,8 @@ extern int yylineno;
 %start progr
 %left OR 
 %left AND
-%left NEQ EQ
-%left LEQ GEQ '<' '>'
+%left NOT_EQ EQ
+%left LESS_EQ GREATER_EQ '<' '>'
 %left '-' '+'
 %left '/' '*'
 %%
@@ -570,34 +570,34 @@ sectiunea3 : clasa
            | sectiunea3 clasa
            ;
 
-declaratieVariabila : TIP lista_id { addInTable(0, 0, $1, "tip", 0, 0, "", "", 0, yylineno); }
-                    | CONSTANT TIP lista_id {addInTable(1, 0, $1, "tip", 0, 0, "", "", 0, yylineno);}
+declaratieVariabila : TYPE lista_id { addInTable(0, 0, $1, "tip", 0, 0, "", "", 0, yylineno); }
+                    | CONSTANT TYPE lista_id {addInTable(1, 0, $1, "tip", 0, 0, "", "", 0, yylineno);}
                     ;
 
-declaratieVariabilaClasa : TIP lista_id { addInTable(0, 0, $1, "tip", 0, 0, "", "", 1, yylineno); }
-                         | CONSTANT TIP lista_id {addInTable(1, 0, $1, "tip", 0, 0, "", "", 1, yylineno);}
+declaratieVariabilaClasa : TYPE lista_id { addInTable(0, 0, $1, "tip", 0, 0, "", "", 1, yylineno); }
+                         | CONSTANT TYPE lista_id {addInTable(1, 0, $1, "tip", 0, 0, "", "", 1, yylineno);}
                          ;
 
-declaratieFunctie : TIP ID '(' lista_param ')' BFCT list EFCT { addInTableFunctions($1, $2, "tip", yylineno, 0, $4);}
-                  | TIP ID '(' ')' BFCT list EFCT { addInTableFunctions($1, $2, "tip", yylineno, 0, "");}
-                  | TIP ID '(' lista_param ')' BFCT list RETURN e ';' EFCT { int val = evalAST($9, yylineno); addInTableFunctions($1, $2, "tip", yylineno, 0, $4);}
-                  | TIP ID '(' ')' BFCT list RETURN e ';' EFCT { int val = evalAST($8, yylineno); addInTableFunctions($1, $2, "tip", yylineno, 0, "");}
+declaratieFunctie : TYPE ID '(' lista_param ')' BEGIN_FN list END_FN { addInTableFunctions($1, $2, "tip", yylineno, 0, $4);}
+                  | TYPE ID '(' ')' BEGIN_FN list END_FN { addInTableFunctions($1, $2, "tip", yylineno, 0, "");}
+                  | TYPE ID '(' lista_param ')' BEGIN_FN list RETURN e ';' END_FN { int val = evalAST($9, yylineno); addInTableFunctions($1, $2, "tip", yylineno, 0, $4);}
+                  | TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN { int val = evalAST($8, yylineno); addInTableFunctions($1, $2, "tip", yylineno, 0, "");}
                   ;
 
-declaratieFunctieClasa : TIP ID '(' lista_param ')' { addInTableFunctions($1, $2, "tip", yylineno, 1, $4);}
-                       | TIP ID '(' ')' { addInTableFunctions($1, $2, "tip", yylineno, 1, "");}
+declaratieFunctieClasa : TYPE ID '(' lista_param ')' { addInTableFunctions($1, $2, "tip", yylineno, 1, $4);}
+                       | TYPE ID '(' ')' { addInTableFunctions($1, $2, "tip", yylineno, 1, "");}
                        ;
 
 lista_param : param {$$ = $1;} 
             | param ',' lista_param { $$ = ConstruiescRasp($1, $3, ",");}
             ;
             
-param : TIP ID {
+param : TYPE ID {
                 $$ = ConstruiescRasp($1, $2, " ");
                }
       ; 
 
-clasa : CLASS ID interior_clasa ECLASS {Clasa($2);}
+clasa : BEGIN_CLASS ID interior_clasa END_CLASS {Clasa($2);}
       ;
 
 sectiuneaclasa1 : declaratieVariabilaClasa ';'
@@ -628,7 +628,7 @@ lista_id : ID {addInTable(0, 0, $1, "variabila", 0, 0, "", "", 0, yylineno);}
          ;
       
 /* bloc */
-bloc : BGIN list END
+bloc : BEGIN_MAIN list END_MAIN
      ;
      
 /* lista instructiuni */
@@ -643,14 +643,14 @@ list : statement ';'
 /* instructiune */
 statement: ID ASSIGN e  { 
                             Verif($1, yylineno, 0);
-                            if(strcmp(getIdType($1), "int"))
+                            if(strcmp(getIdType($1), "i32"))
                             {
                                 sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                 print_error();
                                 exit(0);
                             }
                             int val = Eval($3, yylineno);
-                            actualizareTabel($1, "int", val, yylineno, 0, "");
+                            actualizareTabel($1, "i32", val, yylineno, 0, "");
                         }
          | ID '(' lista_apel ')' {VerifFct($1, $3, yylineno);}
          | TYPEOF '(' pseudo_e ')' {printf("%s\n", $3);}
@@ -658,24 +658,24 @@ statement: ID ASSIGN e  {
          | ID '.' ID ASSIGN e { 
                                 snprintf(buff,100,"%s.%s", $1, $3);
                                 Verif(buff, yylineno, 0);
-                                if(strcmp(getIdType($1), "int"))
+                                if(strcmp(getIdType($1), "i32"))
                                 {
                                     sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                     print_error();
                                     exit(0);
                                 }
                                 int val = Eval($5, yylineno);
-                                actualizareTabel(buff, "int", val, yylineno, 0, "");
+                                actualizareTabel(buff, "i32", val, yylineno, 0, "");
                               }
          | ID ASSIGN NR_FLOAT {
                                 Verif($1, yylineno, 0);
-                                if(strcmp(getIdType($1), "float"))
+                                if(strcmp(getIdType($1), "f32"))
                                 {
                                     sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                     print_error();
                                     exit(0);
                                 }
-                                actualizareTabel($1, "float", 0, yylineno, $3, "");
+                                actualizareTabel($1, "f32", 0, yylineno, $3, "");
                               }
          | ID '.' ID '(' lista_apel ')' {
                                             snprintf(buff,100,"%s.%s", $1, $3);
@@ -694,35 +694,35 @@ cond : '(' cond ')' {$$ = $2;}
                     }
      | e opr e { 
                 int rez1=evalAST($1, yylineno); int rez2=evalAST($3, yylineno);
-                if (strcmp($2, "<=")) $$=(rez1 <= rez2);
-                if (strcmp($2, ">=")) $$=(rez1 >= rez2);
-                if (strcmp($2, "!=")) $$=(rez1 != rez2);
-                if (strcmp($2, "==")) $$=(rez1 == rez2);
+                if (strcmp($2, "less_equal")) $$=(rez1 <= rez2);
+                if (strcmp($2, "greater_equal")) $$=(rez1 >= rez2);
+                if (strcmp($2, "not_equal")) $$=(rez1 != rez2);
+                if (strcmp($2, "equal")) $$=(rez1 == rez2);
                 if (strcmp($2, ">")) $$=(rez1 > rez2);
                 if (strcmp($2, "<")) $$=(rez1 < rez2);
                 }
      ; 
 
-opr : LEQ {$$ = $1;}
-    | GEQ {$$ = $1;}
-    | NEQ {$$ = $1;}
+opr : LESS_EQ {$$ = $1;}
+    | GREATER_EQ {$$ = $1;}
+    | NOT_EQ {$$ = $1;}
     | EQ  {$$ = $1;}
     | '>' {$$ = ">";}
     | '<' {$$ = "<";}
     ;
 
-if : IF '(' cond ')' list EIF
-   | IF '(' cond ')' list ELSE list EIF
+if : IF '(' cond ')' list END_IF
+   | IF '(' cond ')' list ELSE list END_IF
    ;
 
-for : FOR '(' TIP ID ASSIGN e ';' cond ';' statement ')' list EFOR
-    | FOR '(' ID ASSIGN e ';' cond ';' statement ')' list EFOR
+for : FOR '(' TYPE ID ASSIGN e ';' cond ';' statement ')' list END_FOR
+    | FOR '(' ID ASSIGN e ';' cond ';' statement ')' list END_FOR
     ;
 
 do : DO list WHILE '(' cond ')' ';'
    ;
 
-while : WHILE '(' cond ')' list EWHILE
+while : WHILE '(' cond ')' list END_WHILE
       ;
 
 e : e '+' e { $$ = buildAST("+", $1, $3, OPERATOR); }
@@ -778,8 +778,8 @@ pseudo_e : pseudo_e '+' pseudo_e {
                                  }
          | '(' pseudo_e ')' { $$ = $2; }
          | ID {Verif($1, yylineno, 0); $$ = getIdType($1);}
-         | NR {$$ = "int";}
-         | NR_FLOAT {$$ = "float";}
+         | NR {$$ = "i32";}
+         | NR_FLOAT {$$ = "f32";}
          | ID '[' NR ']' {Verif($1, yylineno, 1); $$ = getIdType($1);}
          | ID '(' lista_apel ')' { VerifFct($1, $3, yylineno); $$ = FctRetType($1);}
          | ID '.' ID {snprintf(buff,100,"%s.%s", $1, $3); Verif($1, yylineno, 1); $$ = getIdType(buff);}
@@ -793,10 +793,10 @@ lista_apel : e {
                     if(tree->nodeType == IDENTIFICATOR)
                         $$ = getIdType(tree->nume);
                     else
-                        $$ = "int";
+                        $$ = "i32";
                 }
                 else
-                    $$ = "int";
+                    $$ = "i32";
             }
            | lista_apel ',' e {
                     struct AST* tree = $3;
@@ -806,21 +806,21 @@ lista_apel : e {
                             if(tree->nodeType == IDENTIFICATOR)
                                 strcpy(tip, getIdType(tree->nume));
                             else
-                                strcpy(tip, "int");
+                                strcpy(tip, "i32");
                         }
                         else
-                            strcpy(tip, "int");
+                            strcpy(tip, "i32");
                         strcpy(buff, $1);
                         strcat(buff, ",");
                         strcat(buff, tip);
                         $$ = buff;
                         // printf("%s.\n", tip);
                 }
-           | NR_FLOAT {$$ = "float";}
+           | NR_FLOAT {$$ = "f32";}
            | lista_apel ',' NR_FLOAT { snprintf(buff,100,"%s,float",$1); $$ = buff;}
-           | CHAR {$$ = "char";}
+           | CHAR {$$ = "chr";}
            | lista_apel ',' CHAR {snprintf(buff,100,"%s,char",$1); $$ = buff;}
-           | STRING {$$ = "string";}
+           | STRING {$$ = "str";}
            | lista_apel ',' STRING {snprintf(buff,100,"%s,string",$1); $$ = buff;}
            ;
 
@@ -841,3 +841,4 @@ int main(int argc, char** argv)
     printVars(fd);
     printFunctions(fd1);
 }
+

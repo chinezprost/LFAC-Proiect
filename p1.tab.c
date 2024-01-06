@@ -370,7 +370,7 @@ int evalAST(struct AST* tree, int yylineno)
             char tip[10];
             bzero(&tip, 10);
             strcpy(tip, getIdType(tree->nume));
-            if(!strcmp(tip, "char"))
+            if(!strcmp(tip, "chr"))
             {
                 sprintf(errMsg, "Linia %d: variabila %s este de tip char!", yylineno, tree->nume);
                 print_error();
@@ -384,7 +384,7 @@ int evalAST(struct AST* tree, int yylineno)
                 exit(0);
             }
             else
-            if(!strcmp(tip, "string"))
+            if(!strcmp(tip, "str"))
             {
                 sprintf(errMsg, "Linia %d: variabila %s este de tip string!", yylineno, tree->nume);
                 print_error();
@@ -392,7 +392,7 @@ int evalAST(struct AST* tree, int yylineno)
             }
             else
             {
-                if(!strcmp(tip, "int"))
+                if(!strcmp(tip, "i32"))
                     return getIdValue(tree->nume, yylineno);
             }
         }
@@ -429,13 +429,13 @@ char *TypeOf(struct AST* tree, float nrfloat, int boolval, char sir_str[], char 
     if(tree == NULL)
     {
         if(nrfloat != 0)
-            return (char*)"float";
+            return (char*)"f32";
         if(boolval != 0)
             return (char*)"bool";
         if(strcmp(sir_str, ""))
-            return (char*)"string";
+            return (char*)"str";
         if(strcmp(chr_sir, ""))
-            return (char*)"char";
+            return (char*)"chr";
     }
     else
     {
@@ -446,17 +446,17 @@ char *TypeOf(struct AST* tree, float nrfloat, int boolval, char sir_str[], char 
                 char tip[10];
                 bzero(&tip, 10);
                 strcpy(tip, getIdType(tree->nume));
-                if(!strcmp(tip, "int"))
-                    return (char*)"int";
+                if(!strcmp(tip, "i32"))
+                    return (char*)"i32";
                 if(!strcmp(tip, "bool"))
                     return (char*)"bool";
-                if(!strcmp(tip, "float"))
-                    return (char*)"float";
+                if(!strcmp(tip, "f32"))
+                    return (char*)"f32";
             }
             else
             {
                 int x = evalAST(tree, yylineno);
-                return "int";
+                return "i32";
             }
         }
     }
@@ -499,16 +499,16 @@ void actualizareTabel(char nume[], char tip[], int value, int yylineno, float fv
                 print_error();
                 exit(0);
             }
-            if(!strcmp(tip, "int") || !strcmp(tip, "bool"))
+            if(!strcmp(tip, "i32") || !strcmp(tip, "bool"))
                 symbolTable[i].info.int_val = value;
             else
-                if(!strcmp(tip, "float"))
+                if(!strcmp(tip, "f32"))
                     symbolTable[i].info.float_val = fvalue;
                 else
-                    if(!strcmp(tip, "string"))
+                    if(!strcmp(tip, "str"))
                         strcpy(symbolTable[i].info.string_val, svalue);
                     else
-                        if(!strcmp(tip, "char"))
+                        if(!strcmp(tip, "chr"))
                             symbolTable[i].info.char_val = svalue[1];
             break;
         }
@@ -542,10 +542,10 @@ void printVars(int fd)
         write(fd, sp, strlen(sp));
         write(fd, symbolTable[i].tip, strlen(symbolTable[i].tip));
         write(fd, sp, strlen(sp));
-        if(!strcmp(symbolTable[i].tip, "int")) {snprintf(inf,100,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "string")) {snprintf(inf,500,"%s", symbolTable[i].info.string_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "float")) {snprintf(inf,500,"%f", symbolTable[i].info.float_val);write(fd, inf, strlen(inf));}
-        else if(!strcmp(symbolTable[i].tip, "char")) {snprintf(inf,500,"%c", symbolTable[i].info.char_val);write(fd, inf, strlen(inf));}
+        if(!strcmp(symbolTable[i].tip, "i32")) {snprintf(inf,100,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "str")) {snprintf(inf,500,"%s", symbolTable[i].info.string_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "f32")) {snprintf(inf,500,"%f", symbolTable[i].info.float_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "chr")) {snprintf(inf,500,"%c", symbolTable[i].info.char_val);write(fd, inf, strlen(inf));}
         else if(!strcmp(symbolTable[i].tip, "bool")) {snprintf(inf,500,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
         write(fd, "\n", strlen("\n"));
     }
@@ -618,31 +618,31 @@ enum yysymbol_kind_t
   YYSYMBOL_YYEOF = 0,                      /* "end of file"  */
   YYSYMBOL_YYerror = 1,                    /* error  */
   YYSYMBOL_YYUNDEF = 2,                    /* "invalid token"  */
-  YYSYMBOL_LEQ = 3,                        /* LEQ  */
-  YYSYMBOL_GEQ = 4,                        /* GEQ  */
-  YYSYMBOL_NEQ = 5,                        /* NEQ  */
+  YYSYMBOL_LESS_EQ = 3,                    /* LESS_EQ  */
+  YYSYMBOL_GREATER_EQ = 4,                 /* GREATER_EQ  */
+  YYSYMBOL_NOT_EQ = 5,                     /* NOT_EQ  */
   YYSYMBOL_EQ = 6,                         /* EQ  */
   YYSYMBOL_RETURN = 7,                     /* RETURN  */
-  YYSYMBOL_BFCT = 8,                       /* BFCT  */
-  YYSYMBOL_EFCT = 9,                       /* EFCT  */
+  YYSYMBOL_BEGIN_FN = 8,                   /* BEGIN_FN  */
+  YYSYMBOL_END_FN = 9,                     /* END_FN  */
   YYSYMBOL_AND = 10,                       /* AND  */
   YYSYMBOL_OR = 11,                        /* OR  */
   YYSYMBOL_ID = 12,                        /* ID  */
   YYSYMBOL_STRING = 13,                    /* STRING  */
-  YYSYMBOL_TIP = 14,                       /* TIP  */
+  YYSYMBOL_TYPE = 14,                      /* TYPE  */
   YYSYMBOL_ASSIGN = 15,                    /* ASSIGN  */
-  YYSYMBOL_BGIN = 16,                      /* BGIN  */
-  YYSYMBOL_END = 17,                       /* END  */
-  YYSYMBOL_CLASS = 18,                     /* CLASS  */
-  YYSYMBOL_ECLASS = 19,                    /* ECLASS  */
+  YYSYMBOL_BEGIN_MAIN = 16,                /* BEGIN_MAIN  */
+  YYSYMBOL_END_MAIN = 17,                  /* END_MAIN  */
+  YYSYMBOL_BEGIN_CLASS = 18,               /* BEGIN_CLASS  */
+  YYSYMBOL_END_CLASS = 19,                 /* END_CLASS  */
   YYSYMBOL_IF = 20,                        /* IF  */
-  YYSYMBOL_EIF = 21,                       /* EIF  */
+  YYSYMBOL_END_IF = 21,                    /* END_IF  */
   YYSYMBOL_ELSE = 22,                      /* ELSE  */
   YYSYMBOL_FOR = 23,                       /* FOR  */
-  YYSYMBOL_EFOR = 24,                      /* EFOR  */
+  YYSYMBOL_END_FOR = 24,                   /* END_FOR  */
   YYSYMBOL_CONSTANT = 25,                  /* CONSTANT  */
   YYSYMBOL_WHILE = 26,                     /* WHILE  */
-  YYSYMBOL_EWHILE = 27,                    /* EWHILE  */
+  YYSYMBOL_END_WHILE = 27,                 /* END_WHILE  */
   YYSYMBOL_DO = 28,                        /* DO  */
   YYSYMBOL_EVAL = 29,                      /* EVAL  */
   YYSYMBOL_TYPEOF = 30,                    /* TYPEOF  */
@@ -1106,11 +1106,12 @@ static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "\"end of file\"", "error", "\"invalid token\"", "LEQ", "GEQ", "NEQ",
-  "EQ", "RETURN", "BFCT", "EFCT", "AND", "OR", "ID", "STRING", "TIP",
-  "ASSIGN", "BGIN", "END", "CLASS", "ECLASS", "IF", "EIF", "ELSE", "FOR",
-  "EFOR", "CONSTANT", "WHILE", "EWHILE", "DO", "EVAL", "TYPEOF", "CHAR",
-  "NR", "NR_FLOAT", "'<'", "'>'", "'-'", "'+'", "'/'", "'*'", "';'", "'('",
+  "\"end of file\"", "error", "\"invalid token\"", "LESS_EQ",
+  "GREATER_EQ", "NOT_EQ", "EQ", "RETURN", "BEGIN_FN", "END_FN", "AND",
+  "OR", "ID", "STRING", "TYPE", "ASSIGN", "BEGIN_MAIN", "END_MAIN",
+  "BEGIN_CLASS", "END_CLASS", "IF", "END_IF", "ELSE", "FOR", "END_FOR",
+  "CONSTANT", "WHILE", "END_WHILE", "DO", "EVAL", "TYPEOF", "CHAR", "NR",
+  "NR_FLOAT", "'<'", "'>'", "'-'", "'+'", "'/'", "'*'", "';'", "'('",
   "')'", "','", "'['", "']'", "'.'", "$accept", "progr", "rest1", "rest2",
   "sectiunea1", "sectiunea2", "sectiunea3", "declaratieVariabila",
   "declaratieVariabilaClasa", "declaratieFunctie",
@@ -1836,199 +1837,199 @@ yyreduce:
   case 2: /* progr: sectiunea1 rest1  */
 #line 552 "p1.y"
                         {printf("program corect sintactic\n");}
-#line 1840 "p1.tab.c"
+#line 1841 "p1.tab.c"
     break;
 
-  case 11: /* declaratieVariabila: TIP lista_id  */
+  case 11: /* declaratieVariabila: TYPE lista_id  */
 #line 573 "p1.y"
-                                   { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 0, yylineno); }
-#line 1846 "p1.tab.c"
+                                    { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 0, yylineno); }
+#line 1847 "p1.tab.c"
     break;
 
-  case 12: /* declaratieVariabila: CONSTANT TIP lista_id  */
+  case 12: /* declaratieVariabila: CONSTANT TYPE lista_id  */
 #line 574 "p1.y"
-                                            {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 0, yylineno);}
-#line 1852 "p1.tab.c"
+                                             {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 0, yylineno);}
+#line 1853 "p1.tab.c"
     break;
 
-  case 13: /* declaratieVariabilaClasa: TIP lista_id  */
+  case 13: /* declaratieVariabilaClasa: TYPE lista_id  */
 #line 577 "p1.y"
-                                        { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 1, yylineno); }
-#line 1858 "p1.tab.c"
+                                         { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 1, yylineno); }
+#line 1859 "p1.tab.c"
     break;
 
-  case 14: /* declaratieVariabilaClasa: CONSTANT TIP lista_id  */
+  case 14: /* declaratieVariabilaClasa: CONSTANT TYPE lista_id  */
 #line 578 "p1.y"
-                                                 {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 1, yylineno);}
-#line 1864 "p1.tab.c"
+                                                  {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 1, yylineno);}
+#line 1865 "p1.tab.c"
     break;
 
-  case 15: /* declaratieFunctie: TIP ID '(' lista_param ')' BFCT list EFCT  */
+  case 15: /* declaratieFunctie: TYPE ID '(' lista_param ')' BEGIN_FN list END_FN  */
 #line 581 "p1.y"
-                                                              { addInTableFunctions((yyvsp[-7].strval), (yyvsp[-6].strval), "tip", yylineno, 0, (yyvsp[-4].strval));}
-#line 1870 "p1.tab.c"
+                                                                     { addInTableFunctions((yyvsp[-7].strval), (yyvsp[-6].strval), "tip", yylineno, 0, (yyvsp[-4].strval));}
+#line 1871 "p1.tab.c"
     break;
 
-  case 16: /* declaratieFunctie: TIP ID '(' ')' BFCT list EFCT  */
+  case 16: /* declaratieFunctie: TYPE ID '(' ')' BEGIN_FN list END_FN  */
 #line 582 "p1.y"
-                                                  { addInTableFunctions((yyvsp[-6].strval), (yyvsp[-5].strval), "tip", yylineno, 0, "");}
-#line 1876 "p1.tab.c"
+                                                         { addInTableFunctions((yyvsp[-6].strval), (yyvsp[-5].strval), "tip", yylineno, 0, "");}
+#line 1877 "p1.tab.c"
     break;
 
-  case 17: /* declaratieFunctie: TIP ID '(' lista_param ')' BFCT list RETURN e ';' EFCT  */
+  case 17: /* declaratieFunctie: TYPE ID '(' lista_param ')' BEGIN_FN list RETURN e ';' END_FN  */
 #line 583 "p1.y"
-                                                                           { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-10].strval), (yyvsp[-9].strval), "tip", yylineno, 0, (yyvsp[-7].strval));}
-#line 1882 "p1.tab.c"
+                                                                                  { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-10].strval), (yyvsp[-9].strval), "tip", yylineno, 0, (yyvsp[-7].strval));}
+#line 1883 "p1.tab.c"
     break;
 
-  case 18: /* declaratieFunctie: TIP ID '(' ')' BFCT list RETURN e ';' EFCT  */
+  case 18: /* declaratieFunctie: TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN  */
 #line 584 "p1.y"
-                                                               { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-9].strval), (yyvsp[-8].strval), "tip", yylineno, 0, "");}
-#line 1888 "p1.tab.c"
+                                                                      { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-9].strval), (yyvsp[-8].strval), "tip", yylineno, 0, "");}
+#line 1889 "p1.tab.c"
     break;
 
-  case 19: /* declaratieFunctieClasa: TIP ID '(' lista_param ')'  */
+  case 19: /* declaratieFunctieClasa: TYPE ID '(' lista_param ')'  */
 #line 587 "p1.y"
-                                                    { addInTableFunctions((yyvsp[-4].strval), (yyvsp[-3].strval), "tip", yylineno, 1, (yyvsp[-1].strval));}
-#line 1894 "p1.tab.c"
+                                                     { addInTableFunctions((yyvsp[-4].strval), (yyvsp[-3].strval), "tip", yylineno, 1, (yyvsp[-1].strval));}
+#line 1895 "p1.tab.c"
     break;
 
-  case 20: /* declaratieFunctieClasa: TIP ID '(' ')'  */
+  case 20: /* declaratieFunctieClasa: TYPE ID '(' ')'  */
 #line 588 "p1.y"
-                                        { addInTableFunctions((yyvsp[-3].strval), (yyvsp[-2].strval), "tip", yylineno, 1, "");}
-#line 1900 "p1.tab.c"
+                                         { addInTableFunctions((yyvsp[-3].strval), (yyvsp[-2].strval), "tip", yylineno, 1, "");}
+#line 1901 "p1.tab.c"
     break;
 
   case 21: /* lista_param: param  */
 #line 591 "p1.y"
                     {(yyval.strval) = (yyvsp[0].strval);}
-#line 1906 "p1.tab.c"
+#line 1907 "p1.tab.c"
     break;
 
   case 22: /* lista_param: param ',' lista_param  */
 #line 592 "p1.y"
                                     { (yyval.strval) = ConstruiescRasp((yyvsp[-2].strval), (yyvsp[0].strval), ",");}
-#line 1912 "p1.tab.c"
+#line 1913 "p1.tab.c"
     break;
 
-  case 23: /* param: TIP ID  */
+  case 23: /* param: TYPE ID  */
 #line 595 "p1.y"
-               {
+                {
                 (yyval.strval) = ConstruiescRasp((yyvsp[-1].strval), (yyvsp[0].strval), " ");
                }
-#line 1920 "p1.tab.c"
+#line 1921 "p1.tab.c"
     break;
 
-  case 24: /* clasa: CLASS ID interior_clasa ECLASS  */
+  case 24: /* clasa: BEGIN_CLASS ID interior_clasa END_CLASS  */
 #line 600 "p1.y"
-                                       {Clasa((yyvsp[-2].strval));}
-#line 1926 "p1.tab.c"
+                                                {Clasa((yyvsp[-2].strval));}
+#line 1927 "p1.tab.c"
     break;
 
   case 32: /* lista_id: ID  */
 #line 616 "p1.y"
               {addInTable(0, 0, (yyvsp[0].strval), "variabila", 0, 0, "", "", 0, yylineno);}
-#line 1932 "p1.tab.c"
+#line 1933 "p1.tab.c"
     break;
 
   case 33: /* lista_id: ID '[' NR ']'  */
 #line 617 "p1.y"
                          { addInTable(0, (yyvsp[-1].intval), (yyvsp[-3].strval), "variabila", 0, 0, "", "", 0, yylineno);}
-#line 1938 "p1.tab.c"
+#line 1939 "p1.tab.c"
     break;
 
   case 34: /* lista_id: ID ',' lista_id  */
 #line 618 "p1.y"
                            { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, "", "", 0, yylineno);}
-#line 1944 "p1.tab.c"
+#line 1945 "p1.tab.c"
     break;
 
   case 35: /* lista_id: ID '[' NR ']' ',' lista_id  */
 #line 619 "p1.y"
                                       { addInTable(0, (yyvsp[-3].intval), (yyvsp[-5].strval), "variabila", 0, 0, "", "", 0, yylineno);}
-#line 1950 "p1.tab.c"
+#line 1951 "p1.tab.c"
     break;
 
   case 36: /* lista_id: ID ASSIGN e  */
 #line 620 "p1.y"
                        { int val = Eval((yyvsp[0].tree), yylineno); addInTable(0, 0, (yyvsp[-2].strval), "variabila", val, 0, "", "", 0, yylineno);}
-#line 1956 "p1.tab.c"
+#line 1957 "p1.tab.c"
     break;
 
   case 37: /* lista_id: ID ASSIGN e ',' lista_id  */
 #line 621 "p1.y"
                                     { int val = Eval((yyvsp[-2].tree), yylineno); addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, "", "", 0, yylineno);}
-#line 1962 "p1.tab.c"
+#line 1963 "p1.tab.c"
     break;
 
   case 38: /* lista_id: ID ASSIGN NR_FLOAT  */
 #line 622 "p1.y"
                               { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, (yyvsp[0].floatval), "", "", 0, yylineno);}
-#line 1968 "p1.tab.c"
+#line 1969 "p1.tab.c"
     break;
 
   case 39: /* lista_id: ID ASSIGN NR_FLOAT ',' lista_id  */
 #line 623 "p1.y"
                                            { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, (yyvsp[-2].floatval), "", "", 0, yylineno);}
-#line 1974 "p1.tab.c"
+#line 1975 "p1.tab.c"
     break;
 
   case 40: /* lista_id: ID ASSIGN STRING  */
 #line 624 "p1.y"
                             { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, "", (yyvsp[0].strval), 0, yylineno);}
-#line 1980 "p1.tab.c"
+#line 1981 "p1.tab.c"
     break;
 
   case 41: /* lista_id: ID ASSIGN STRING ',' lista_id  */
 #line 625 "p1.y"
                                          { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, "", (yyvsp[-2].strval), 0, yylineno);}
-#line 1986 "p1.tab.c"
+#line 1987 "p1.tab.c"
     break;
 
   case 42: /* lista_id: ID ASSIGN CHAR  */
 #line 626 "p1.y"
                           { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, (yyvsp[0].strval), "", 0, yylineno);}
-#line 1992 "p1.tab.c"
+#line 1993 "p1.tab.c"
     break;
 
   case 43: /* lista_id: ID ASSIGN CHAR ',' lista_id  */
 #line 627 "p1.y"
                                        { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, (yyvsp[-2].strval), "", 0, yylineno);}
-#line 1998 "p1.tab.c"
+#line 1999 "p1.tab.c"
     break;
 
   case 51: /* statement: ID ASSIGN e  */
 #line 644 "p1.y"
                         { 
                             Verif((yyvsp[-2].strval), yylineno, 0);
-                            if(strcmp(getIdType((yyvsp[-2].strval)), "int"))
+                            if(strcmp(getIdType((yyvsp[-2].strval)), "i32"))
                             {
                                 sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                 print_error();
                                 exit(0);
                             }
                             int val = Eval((yyvsp[0].tree), yylineno);
-                            actualizareTabel((yyvsp[-2].strval), "int", val, yylineno, 0, "");
+                            actualizareTabel((yyvsp[-2].strval), "i32", val, yylineno, 0, "");
                         }
-#line 2014 "p1.tab.c"
+#line 2015 "p1.tab.c"
     break;
 
   case 52: /* statement: ID '(' lista_apel ')'  */
 #line 655 "p1.y"
                                  {VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);}
-#line 2020 "p1.tab.c"
+#line 2021 "p1.tab.c"
     break;
 
   case 53: /* statement: TYPEOF '(' pseudo_e ')'  */
 #line 656 "p1.y"
                                    {printf("%s\n", (yyvsp[-1].strval));}
-#line 2026 "p1.tab.c"
+#line 2027 "p1.tab.c"
     break;
 
   case 54: /* statement: EVAL '(' e ')'  */
 #line 657 "p1.y"
                           {printf("%d\n", Eval((yyvsp[-1].tree), yylineno));}
-#line 2032 "p1.tab.c"
+#line 2033 "p1.tab.c"
     break;
 
   case 55: /* statement: ID '.' ID ASSIGN e  */
@@ -2036,31 +2037,31 @@ yyreduce:
                               { 
                                 snprintf(buff,100,"%s.%s", (yyvsp[-4].strval), (yyvsp[-2].strval));
                                 Verif(buff, yylineno, 0);
-                                if(strcmp(getIdType((yyvsp[-4].strval)), "int"))
+                                if(strcmp(getIdType((yyvsp[-4].strval)), "i32"))
                                 {
                                     sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                     print_error();
                                     exit(0);
                                 }
                                 int val = Eval((yyvsp[0].tree), yylineno);
-                                actualizareTabel(buff, "int", val, yylineno, 0, "");
+                                actualizareTabel(buff, "i32", val, yylineno, 0, "");
                               }
-#line 2049 "p1.tab.c"
+#line 2050 "p1.tab.c"
     break;
 
   case 56: /* statement: ID ASSIGN NR_FLOAT  */
 #line 670 "p1.y"
                               {
                                 Verif((yyvsp[-2].strval), yylineno, 0);
-                                if(strcmp(getIdType((yyvsp[-2].strval)), "float"))
+                                if(strcmp(getIdType((yyvsp[-2].strval)), "f32"))
                                 {
                                     sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
                                     print_error();
                                     exit(0);
                                 }
-                                actualizareTabel((yyvsp[-2].strval), "float", 0, yylineno, (yyvsp[0].floatval), "");
+                                actualizareTabel((yyvsp[-2].strval), "f32", 0, yylineno, (yyvsp[0].floatval), "");
                               }
-#line 2064 "p1.tab.c"
+#line 2065 "p1.tab.c"
     break;
 
   case 57: /* statement: ID '.' ID '(' lista_apel ')'  */
@@ -2070,19 +2071,19 @@ yyreduce:
                                             VerifFct(buff, (yyvsp[-1].strval), yylineno);
 
                                         }
-#line 2074 "p1.tab.c"
+#line 2075 "p1.tab.c"
     break;
 
   case 58: /* statement: ID '[' NR ']' ASSIGN e  */
 #line 685 "p1.y"
                                   { Verif((yyvsp[-5].strval), yylineno, (yyvsp[-3].intval));}
-#line 2080 "p1.tab.c"
+#line 2081 "p1.tab.c"
     break;
 
   case 59: /* cond: '(' cond ')'  */
 #line 688 "p1.y"
                     {(yyval.intval) = (yyvsp[-1].intval);}
-#line 2086 "p1.tab.c"
+#line 2087 "p1.tab.c"
     break;
 
   case 60: /* cond: cond AND cond  */
@@ -2090,7 +2091,7 @@ yyreduce:
                      { int rez1=(yyvsp[-2].intval); int rez2=(yyvsp[0].intval); 
                        (yyval.intval)=(rez1 && rez2);
                      }
-#line 2094 "p1.tab.c"
+#line 2095 "p1.tab.c"
     break;
 
   case 61: /* cond: cond OR cond  */
@@ -2098,105 +2099,105 @@ yyreduce:
                     { int rez1=(yyvsp[-2].intval); int rez2=(yyvsp[0].intval);
                       (yyval.intval)=(rez1 || rez2);
                     }
-#line 2102 "p1.tab.c"
+#line 2103 "p1.tab.c"
     break;
 
   case 62: /* cond: e opr e  */
 #line 695 "p1.y"
                { 
                 int rez1=evalAST((yyvsp[-2].tree), yylineno); int rez2=evalAST((yyvsp[0].tree), yylineno);
-                if (strcmp((yyvsp[-1].strval), "<=")) (yyval.intval)=(rez1 <= rez2);
-                if (strcmp((yyvsp[-1].strval), ">=")) (yyval.intval)=(rez1 >= rez2);
-                if (strcmp((yyvsp[-1].strval), "!=")) (yyval.intval)=(rez1 != rez2);
-                if (strcmp((yyvsp[-1].strval), "==")) (yyval.intval)=(rez1 == rez2);
+                if (strcmp((yyvsp[-1].strval), "less_equal")) (yyval.intval)=(rez1 <= rez2);
+                if (strcmp((yyvsp[-1].strval), "greater_equal")) (yyval.intval)=(rez1 >= rez2);
+                if (strcmp((yyvsp[-1].strval), "not_equal")) (yyval.intval)=(rez1 != rez2);
+                if (strcmp((yyvsp[-1].strval), "equal")) (yyval.intval)=(rez1 == rez2);
                 if (strcmp((yyvsp[-1].strval), ">")) (yyval.intval)=(rez1 > rez2);
                 if (strcmp((yyvsp[-1].strval), "<")) (yyval.intval)=(rez1 < rez2);
                 }
-#line 2116 "p1.tab.c"
+#line 2117 "p1.tab.c"
     break;
 
-  case 63: /* opr: LEQ  */
+  case 63: /* opr: LESS_EQ  */
 #line 706 "p1.y"
-          {(yyval.strval) = (yyvsp[0].strval);}
-#line 2122 "p1.tab.c"
+              {(yyval.strval) = (yyvsp[0].strval);}
+#line 2123 "p1.tab.c"
     break;
 
-  case 64: /* opr: GEQ  */
+  case 64: /* opr: GREATER_EQ  */
 #line 707 "p1.y"
-          {(yyval.strval) = (yyvsp[0].strval);}
-#line 2128 "p1.tab.c"
+                 {(yyval.strval) = (yyvsp[0].strval);}
+#line 2129 "p1.tab.c"
     break;
 
-  case 65: /* opr: NEQ  */
+  case 65: /* opr: NOT_EQ  */
 #line 708 "p1.y"
-          {(yyval.strval) = (yyvsp[0].strval);}
-#line 2134 "p1.tab.c"
+             {(yyval.strval) = (yyvsp[0].strval);}
+#line 2135 "p1.tab.c"
     break;
 
   case 66: /* opr: EQ  */
 #line 709 "p1.y"
           {(yyval.strval) = (yyvsp[0].strval);}
-#line 2140 "p1.tab.c"
+#line 2141 "p1.tab.c"
     break;
 
   case 67: /* opr: '>'  */
 #line 710 "p1.y"
           {(yyval.strval) = ">";}
-#line 2146 "p1.tab.c"
+#line 2147 "p1.tab.c"
     break;
 
   case 68: /* opr: '<'  */
 #line 711 "p1.y"
           {(yyval.strval) = "<";}
-#line 2152 "p1.tab.c"
+#line 2153 "p1.tab.c"
     break;
 
   case 75: /* e: e '+' e  */
 #line 728 "p1.y"
             { (yyval.tree) = buildAST("+", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2158 "p1.tab.c"
+#line 2159 "p1.tab.c"
     break;
 
   case 76: /* e: e '-' e  */
 #line 729 "p1.y"
             { (yyval.tree) = buildAST("-", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2164 "p1.tab.c"
+#line 2165 "p1.tab.c"
     break;
 
   case 77: /* e: e '*' e  */
 #line 730 "p1.y"
             { (yyval.tree) = buildAST("*", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2170 "p1.tab.c"
+#line 2171 "p1.tab.c"
     break;
 
   case 78: /* e: e '/' e  */
 #line 731 "p1.y"
             { (yyval.tree) = buildAST("/", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2176 "p1.tab.c"
+#line 2177 "p1.tab.c"
     break;
 
   case 79: /* e: '(' e ')'  */
 #line 732 "p1.y"
               { (yyval.tree) = (yyvsp[-1].tree); }
-#line 2182 "p1.tab.c"
+#line 2183 "p1.tab.c"
     break;
 
   case 80: /* e: ID  */
 #line 733 "p1.y"
        { Verif((yyvsp[0].strval), yylineno, 0); (yyval.tree) = buildAST((yyvsp[0].strval), NULL, NULL, IDENTIFICATOR);}
-#line 2188 "p1.tab.c"
+#line 2189 "p1.tab.c"
     break;
 
   case 81: /* e: NR  */
 #line 734 "p1.y"
        { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", (yyvsp[0].intval)); (yyval.tree) = buildAST(nr, NULL, NULL, NUMAR); }
-#line 2194 "p1.tab.c"
+#line 2195 "p1.tab.c"
     break;
 
   case 82: /* e: ID '[' NR ']'  */
 #line 735 "p1.y"
                   {Verif((yyvsp[-3].strval), yylineno, 1); int val = getArrVal((yyvsp[-3].strval), (yyvsp[-1].intval), yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); (yyval.tree) = buildAST(nr, NULL, NULL, NUMAR); }
-#line 2200 "p1.tab.c"
+#line 2201 "p1.tab.c"
     break;
 
   case 83: /* e: ID '(' lista_apel ')'  */
@@ -2204,19 +2205,19 @@ yyreduce:
                           { VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);
                             (yyval.tree) = buildAST("0", NULL, NULL, NUMAR);
                           }
-#line 2208 "p1.tab.c"
+#line 2209 "p1.tab.c"
     break;
 
   case 84: /* e: ID '.' ID  */
 #line 739 "p1.y"
               { snprintf(buff,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); Verif(buff, yylineno, 0);  (yyval.tree) = buildAST((yyvsp[-2].strval), NULL, NULL, IDENTIFICATOR);}
-#line 2214 "p1.tab.c"
+#line 2215 "p1.tab.c"
     break;
 
   case 85: /* e: ID '.' ID '(' lista_apel ')'  */
 #line 740 "p1.y"
                                  { snprintf(buff,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); VerifFct(buff, (yyvsp[-3].strval), yylineno); (yyval.tree) = buildAST("0", NULL, NULL, NUMAR);}
-#line 2220 "p1.tab.c"
+#line 2221 "p1.tab.c"
     break;
 
   case 86: /* pseudo_e: pseudo_e '+' pseudo_e  */
@@ -2230,7 +2231,7 @@ yyreduce:
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2234 "p1.tab.c"
+#line 2235 "p1.tab.c"
     break;
 
   case 87: /* pseudo_e: pseudo_e '-' pseudo_e  */
@@ -2244,7 +2245,7 @@ yyreduce:
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2248 "p1.tab.c"
+#line 2249 "p1.tab.c"
     break;
 
   case 88: /* pseudo_e: pseudo_e '/' pseudo_e  */
@@ -2258,7 +2259,7 @@ yyreduce:
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2262 "p1.tab.c"
+#line 2263 "p1.tab.c"
     break;
 
   case 89: /* pseudo_e: pseudo_e '*' pseudo_e  */
@@ -2272,55 +2273,55 @@ yyreduce:
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2276 "p1.tab.c"
+#line 2277 "p1.tab.c"
     break;
 
   case 90: /* pseudo_e: '(' pseudo_e ')'  */
 #line 779 "p1.y"
                             { (yyval.strval) = (yyvsp[-1].strval); }
-#line 2282 "p1.tab.c"
+#line 2283 "p1.tab.c"
     break;
 
   case 91: /* pseudo_e: ID  */
 #line 780 "p1.y"
               {Verif((yyvsp[0].strval), yylineno, 0); (yyval.strval) = getIdType((yyvsp[0].strval));}
-#line 2288 "p1.tab.c"
+#line 2289 "p1.tab.c"
     break;
 
   case 92: /* pseudo_e: NR  */
 #line 781 "p1.y"
-              {(yyval.strval) = "int";}
-#line 2294 "p1.tab.c"
+              {(yyval.strval) = "i32";}
+#line 2295 "p1.tab.c"
     break;
 
   case 93: /* pseudo_e: NR_FLOAT  */
 #line 782 "p1.y"
-                    {(yyval.strval) = "float";}
-#line 2300 "p1.tab.c"
+                    {(yyval.strval) = "f32";}
+#line 2301 "p1.tab.c"
     break;
 
   case 94: /* pseudo_e: ID '[' NR ']'  */
 #line 783 "p1.y"
                          {Verif((yyvsp[-3].strval), yylineno, 1); (yyval.strval) = getIdType((yyvsp[-3].strval));}
-#line 2306 "p1.tab.c"
+#line 2307 "p1.tab.c"
     break;
 
   case 95: /* pseudo_e: ID '(' lista_apel ')'  */
 #line 784 "p1.y"
                                  { VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno); (yyval.strval) = FctRetType((yyvsp[-3].strval));}
-#line 2312 "p1.tab.c"
+#line 2313 "p1.tab.c"
     break;
 
   case 96: /* pseudo_e: ID '.' ID  */
 #line 785 "p1.y"
                      {snprintf(buff,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); Verif((yyvsp[-2].strval), yylineno, 1); (yyval.strval) = getIdType(buff);}
-#line 2318 "p1.tab.c"
+#line 2319 "p1.tab.c"
     break;
 
   case 97: /* pseudo_e: ID '.' ID '(' lista_apel ')'  */
 #line 786 "p1.y"
                                         { snprintf(buff,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); VerifFct(buff, (yyvsp[-1].strval), yylineno); (yyval.strval) = FctRetType(buff);}
-#line 2324 "p1.tab.c"
+#line 2325 "p1.tab.c"
     break;
 
   case 98: /* lista_apel: e  */
@@ -2332,12 +2333,12 @@ yyreduce:
                     if(tree->nodeType == IDENTIFICATOR)
                         (yyval.strval) = getIdType(tree->nume);
                     else
-                        (yyval.strval) = "int";
+                        (yyval.strval) = "i32";
                 }
                 else
-                    (yyval.strval) = "int";
+                    (yyval.strval) = "i32";
             }
-#line 2341 "p1.tab.c"
+#line 2342 "p1.tab.c"
     break;
 
   case 99: /* lista_apel: lista_apel ',' e  */
@@ -2350,57 +2351,57 @@ yyreduce:
                             if(tree->nodeType == IDENTIFICATOR)
                                 strcpy(tip, getIdType(tree->nume));
                             else
-                                strcpy(tip, "int");
+                                strcpy(tip, "i32");
                         }
                         else
-                            strcpy(tip, "int");
+                            strcpy(tip, "i32");
                         strcpy(buff, (yyvsp[-2].strval));
                         strcat(buff, ",");
                         strcat(buff, tip);
                         (yyval.strval) = buff;
                         // printf("%s.\n", tip);
                 }
-#line 2364 "p1.tab.c"
+#line 2365 "p1.tab.c"
     break;
 
   case 100: /* lista_apel: NR_FLOAT  */
 #line 819 "p1.y"
-                      {(yyval.strval) = "float";}
-#line 2370 "p1.tab.c"
+                      {(yyval.strval) = "f32";}
+#line 2371 "p1.tab.c"
     break;
 
   case 101: /* lista_apel: lista_apel ',' NR_FLOAT  */
 #line 820 "p1.y"
                                      { snprintf(buff,100,"%s,float",(yyvsp[-2].strval)); (yyval.strval) = buff;}
-#line 2376 "p1.tab.c"
+#line 2377 "p1.tab.c"
     break;
 
   case 102: /* lista_apel: CHAR  */
 #line 821 "p1.y"
-                  {(yyval.strval) = "char";}
-#line 2382 "p1.tab.c"
+                  {(yyval.strval) = "chr";}
+#line 2383 "p1.tab.c"
     break;
 
   case 103: /* lista_apel: lista_apel ',' CHAR  */
 #line 822 "p1.y"
                                  {snprintf(buff,100,"%s,char",(yyvsp[-2].strval)); (yyval.strval) = buff;}
-#line 2388 "p1.tab.c"
+#line 2389 "p1.tab.c"
     break;
 
   case 104: /* lista_apel: STRING  */
 #line 823 "p1.y"
-                    {(yyval.strval) = "string";}
-#line 2394 "p1.tab.c"
+                    {(yyval.strval) = "str";}
+#line 2395 "p1.tab.c"
     break;
 
   case 105: /* lista_apel: lista_apel ',' STRING  */
 #line 824 "p1.y"
                                    {snprintf(buff,100,"%s,string",(yyvsp[-2].strval)); (yyval.strval) = buff;}
-#line 2400 "p1.tab.c"
+#line 2401 "p1.tab.c"
     break;
 
 
-#line 2404 "p1.tab.c"
+#line 2405 "p1.tab.c"
 
       default: break;
     }
@@ -2611,3 +2612,4 @@ int main(int argc, char** argv)
     printVars(fd);
     printFunctions(fd1);
 }
+

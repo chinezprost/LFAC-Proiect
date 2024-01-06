@@ -5,27 +5,31 @@
 %}
 %option noyywrap
 %%
-"int"|"float"|"char"|"string"|"bool" {yylval.strval = strdup(yytext); return TIP;}
-"<=" {return LEQ;}
-">=" {return GEQ;}
-"!=" {return NEQ;}
-"==" {return EQ;}
-"&&" {return AND;}
-"||" {return OR;}
+"i32" {yylval.strval = strdup(yytext); return TYPE;}
+"f32" {yylval.strval = strdup(yytext); return TYPE;}
+"chr" {yylval.strval = strdup(yytext); return TYPE;}
+"str" {yylval.strval = strdup(yytext); return TYPE;}
+"bool" {yylval.strval = strdup(yytext); return TYPE;}
+"less_equal" {return LESS_EQ;}
+"greater_equal" {return GREATER_EQ;}
+"not_equal" {return NOT_EQ;}
+"equal" {return EQ;}
+"and" {return AND;}
+"or" {return OR;}
 "if" {return IF;}
 "else" {return ELSE;}
-"end_if" {return EIF;}
+"if_end" {return END_IF;}
 "for" {return FOR;}
-"begin_function" {return BFCT;}
-"end_function" {return EFCT;}
-"end_for" {return EFOR;}
+"fn" {return BEGIN_FN;}
+"fn_end" {return END_FN;}
+"for_end" {return END_FOR;}
 "do" {return DO;}
 "while" {return WHILE;}
-"end_while" {return EWHILE;}
-"begin_clasa" {return CLASS;}
-"end_clasa" {return ECLASS;}
-"begin_main" {return BGIN;}
-"end_main" {return END;}
+"while_end" {return END_WHILE;}
+"begin_class" {return BEGIN_CLASS;}
+"end_class" {return END_CLASS;}
+"begin_main" {return BEGIN_MAIN;}
+"end_main" {return END_MAIN;}
 "return" {return RETURN;}
 "Eval" {return EVAL;}
 "TypeOf" {return TYPEOF;}
