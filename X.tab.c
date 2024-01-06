@@ -67,525 +67,537 @@
 
 
 /* First part of user prologue.  */
-#line 1 "p1.y"
+#line 1 "X.y"
 
-    #include <iostream>
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <math.h>
-    #include <string.h>
-    #include <fcntl.h>
-    #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <fcntl.h>
+#include <iostream>
+#include <unistd.h>
 
-    char internal_buffer[1024];
-    int variable_counter = 0;
-    int function_counter = 0;
-    int symbol_table_descriptor, symbol_table_function_descriptor;
-    char error_message[1024];
+char buff[100];
+int varCount = 0;
+int functionsCount = 0;
+int fd, fd1;
+char errMsg[100];
 
-    std::string error_string;
+enum nodetype {
+    OPERATOR = 1,
+    IDENTIFICATOR = 2,
+    NUMAR = 3,
+    NUMAR_FLOAT = 4,
+    STRING_OR_CHAR = 5
+};
 
-    enum n_type
+struct informatii {
+    int int_val;
+    char string_val[500];
+    float float_val;
+    char char_val;
+};
+
+struct variabila {
+    char nume[100];
+    char tip[10];
+    struct informatii info;
+    int local;
+    int isConst;
+    int inClass;
+    int arrSize;
+    int arr[100];
+    int elemente;
+} symbolTable[100];
+
+struct param {
+    char nume[200];
+    char tip[20];
+} temp[10];
+
+struct func {
+    char nume[200];
+    char tip[20];
+    unsigned int nrArgs;
+    int inClass;
+    char retId[20];
+    struct param val[30];
+    char tipuriParam[200];
+} symbolTableFunctions[200];
+
+struct AST {
+    char nume[50];
+    struct AST* st;
+    struct AST* dr;
+    enum nodetype nodeType;
+};
+
+struct AST* buildAST(char* nume, struct AST* st, struct AST* dr, enum nodetype type)
+{
+    struct AST* nod = (struct AST*)malloc(sizeof(struct AST));
+    strcpy(nod->nume, strdup(nume));
+    nod->st = st;
+    nod->dr = dr;
+    nod->nodeType = type;
+    return nod;
+}
+
+void print_error()
+{
+    printf("Eroare: %s\n", errMsg);
+}
+
+void initialize()
+{
+    for(int i = 0; i < 100; i++)
     {
-        OPERATOR = 1,
-        IDENTIFIER = 2,
-        NUMBER = 3,
-        FLOAT_NUMBER = 4,
-        CHR_STR = 5
-    };
-
-    class informations
-    {
-    public:
-        char char_value = '\0';
-        float float_value = 0;
-        std::string string_value = "";
-        int integer_value = 0;
-    };
-
-    class symbol_table_class
-    {
-    public:
-        std::string name = "";
-        std::string type = "";
-        informations var_info;
-        int local = 0;
-        bool is_constant = 0;
-        bool is_class = 0;
-        int array_size = 0;
-        int array[100] = {'\0'};
-        int elements = 0;
-    };
-
-    class parameters
-    {
-    public:
-        std::string name;
-        std::string type;
-    };
-
-    class symbol_table_function_class
-    {
-    public:
-        std::string name;
-        std::string type;
-        int argument_count;
-        bool is_class;
-        std::string ret_id;
-        parameters value[30];
-        std::string parameter_types;
-    };
-
-    parameters temp_params[10];
-    symbol_table_class symbol_table[100];
-    symbol_table_function_class symbol_table_functions[100];
-
-    struct AST
-    {
-        std::string name;
-        AST* left;
-        AST* right;
-        n_type n_Type;
-    };
-
-    AST* AST_Init(std::string _name, AST* _left, AST* _right, n_type _type)
-    {
-        AST* new_node = new AST;
-        new_node->name = _name;
-        new_node->left = _left;
-        new_node->right = _right;
-        new_node->n_Type = _type;
-
-        return new_node;
+        bzero(&symbolTable[i].nume, sizeof(symbolTable[i].nume));
+        bzero(&symbolTable[i].tip, sizeof(symbolTable[i].tip));
+        symbolTable[i].info.int_val = 0;
+        symbolTable[i].info.float_val = 0;
+        symbolTable[i].arrSize = 0;
+        strcpy(symbolTable[i].info.string_val, "");
+        symbolTable[i].info.char_val = '\0';
     }
+}
 
-    void handle_error()
+void addInTable(int isc, int arrS, char s[], char tip[], int intv, float floatv, char *c, char *strv, int clasa, int yylineno)
+{
+    if(!strcmp(tip, "tip"))
     {
-        std::cout << "An error has occured: " << error_message << '\n';
-    }
-
-    void insert_table(bool _is_constant, int _array_size, std::string _string, std::string _type, int _int_value, float _float_value, char _char_value, std::string _string_value, bool _is_class, int yylineno)
-    {
-        //std::cout << _string << " " << _type << '\n';
-        if(_type == "type")
+        int aux = varCount - 1;
+        while(!strcmp(symbolTable[aux].tip, "") && aux >= 0)
         {
-            int temp = variable_counter - 1;
-            while(symbol_table[temp].type == "" && temp >= 0)
-            {
-                symbol_table[temp].type = _string;
-                symbol_table[temp].is_constant = _is_constant;
-                symbol_table[temp].is_class = _is_class;
-                temp = temp - 1;
-            }
+            strcpy(symbolTable[aux].tip, s);
+            symbolTable[aux].isConst = isc;
+            symbolTable[aux].inClass = clasa;
+            aux--;
         }
-        else
+    }
+    else
+    {
+        if(!strcmp(tip, "variabila"))
         {
-            if(_type == "variable")
+            int esteDejaDeclarata = 0;
+            for(int i = 0; i < varCount; i++)
             {
-                for(int i = 0; i < variable_counter; i++)
+                if(!strcmp(symbolTable[i].nume, s))
                 {
-                    if(symbol_table[i].name == _string)
-                    {
-                        //std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
-                        handle_error();
-                        exit(0);
-                    }
+                    esteDejaDeclarata = 1;
+                    break;
                 }
-
-            symbol_table[variable_counter].name = _string;
-            symbol_table[variable_counter].var_info.integer_value = _int_value;
-            symbol_table[variable_counter].var_info.float_value = _float_value;
-            symbol_table[variable_counter].var_info.char_value = _char_value;
-            symbol_table[variable_counter].array_size = _array_size;
-            symbol_table[variable_counter].var_info.string_value = _string_value;
-            variable_counter += 1;
             }
-        }
-    }
-
-    void check(std::string _s, int yylineno, int v)
-    {
-        bool exists = 0;
-        int i = 0;
-        for(i = 0; i < variable_counter; i++)
-        {
-            //std::cout << symbol_table[i].name << '\n';
-            if(symbol_table[i].name == _s)
+            if(esteDejaDeclarata)
             {
-                exists = 1;
-                break;
-            }
-        }
-
-        if(!exists)
-        {
-            {
-                std::cout << "The line " << yylineno << ": Variable " << _s << " hasn't been declared!";
-                handle_error();
+                sprintf(errMsg, "Linia %d, variabila %s a mai fost declarata!",yylineno, s);
+                print_error();
                 exit(0);
-            }
-        }
-        else
-        {
-            if(v > 0 && symbol_table[i].array_size == 0)
-            {
-                std::cout << "The line " << yylineno << ": Variable " << _s << " is not an array!";
-                handle_error();
-                exit(0);
-            }
-            else if(v == 0 && symbol_table[i].array_size > 0)
-            {
-                std::cout << "The line " << yylineno << ": Variable " << _s << " is a array!";
-                handle_error();
-                exit(0);
-            }
-        }
-    }
-
-    void insert_table_fn(std::string _type_p, std::string _s, std::string _type, int yylineno, bool _is_class, std::string _param)
-    {
-        if(_type == "type")
-        {
-            for(int i = 0; i < function_counter; i++)
-            {
-                if(symbol_table_functions[i].name == _s)
-                {
-                    std::cout << "The line " << yylineno << ": Function " << _s << " is already defined!";
-                    handle_error();
-                    exit(0);
-                }
-            }
-            symbol_table_functions[function_counter].name = _s;
-            symbol_table_functions[function_counter].type = _type_p;
-            symbol_table_functions[function_counter].is_class = _is_class;
-            symbol_table_functions[function_counter].argument_count = 0;
-            
-            if(_param != "")
-            {
-                char *p = strtok(strdup(_param.c_str()), ",");
-                while(p != nullptr)
-                {
-                    char buffer[1024];
-                    std::string partition;
-                    std::string aux;
-
-                    partition = strchr(p, ' ');
-                    strncpy(buffer, p, strlen(p) - partition.size());
-                    aux = std::string(buffer);
-
-                    symbol_table_functions[function_counter].parameter_types = symbol_table_functions[function_counter].parameter_types + aux;
-                    symbol_table_functions[function_counter].parameter_types = symbol_table_functions[function_counter].parameter_types + ",";
-                    symbol_table_functions[function_counter].value[symbol_table_functions[function_counter].argument_count].type = aux;
-                    symbol_table_functions[function_counter].value[symbol_table_functions[function_counter].argument_count].name = p + strlen(aux.c_str());
-
-                    symbol_table_functions[function_counter].argument_count++;
-
-                    p = strtok(NULL, ",");
-                }
-            }
-            function_counter += 1;
-        }
-    }
-
-    void check_fn(std::string _s, std::string _params, int yylineno)
-    {
-        //std::cout << "Checking function: " << _s << " --- " << _params;
-        bool exists = 0;
-        int i;
-        for(i = 0; i < function_counter; i++)
-        {
-            //std::cout << "Currently at: " << symbol_table_functions[i].name << '\n';
-            if(symbol_table_functions[i].name == _s)
-            {
-                exists = 1;
-                break;
-            }
-        }
-
-        if(!exists)
-        {
-            std::cout << "The line " << yylineno << ": Function " << _s << " is not defined!";
-            handle_error();
-            exit(0);
-        }
-        
-        if(_params == symbol_table_functions[i].parameter_types)
-        {
-            std::cout << "The line " << yylineno << ": Function " << _s << " is not called correctly!";
-            handle_error();
-            exit(0);
-        }
-    }
-
-    void classs(std::string _s)
-    {
-        int temp = variable_counter - 1;
-        while(symbol_table[temp].is_class && temp >= 0)
-        {
-            std::string temp_string;
-            temp_string = symbol_table[temp].name;
-            symbol_table[temp].name = _s;
-            symbol_table[temp].name += ".";
-            symbol_table[temp].name += temp_string;
-            symbol_table[temp].is_class = 0;
-            temp -= 1;
-        }
-
-        temp = function_counter - 1;
-        while(symbol_table_functions[temp].is_class && temp >= 0)
-        {
-            std::string temp_string;
-            temp_string = symbol_table_functions[temp].name;
-            symbol_table_functions[temp].name = _s;
-            symbol_table_functions[temp].name += ".";
-            symbol_table_functions[temp].name += temp_string;
-            symbol_table_functions[temp].is_class = 0;
-            temp -= 1;
-        }
-    }
-
-    int get_id(std::string _s, int yylineno)
-    {
-        for(int i = 0; i < variable_counter; i++)
-        {
-            if(symbol_table[i].name == _s)
-            {
-                if(symbol_table[i].array_size > 0)
-                {
-                    std::cout << "The line " << yylineno << ": Array " << _s << " is not correct!";
-                    handle_error();
-                    exit(0);
-                }
-                //std::cout << "VALOARE ESTE: " << symbol_table[i].var_info.integer_value << '\n';
-                return symbol_table[i].var_info.integer_value;
-            }
-        }
-    }
-
-    std::string get_type(std::string _s)
-    {
-        for(int i = 0; i < variable_counter; i++)
-        {
-            if(symbol_table[i].name == _s)
-            {
-                //std::cout << symbol_table[i].type << '\n';
-                return symbol_table[i].type;
-            }
-        }
-        return std::string("No existent type.");
-    }
-
-    int Eval(AST* _ast, int yylineno)
-    {
-        if(_ast->left == nullptr && _ast->right == nullptr)
-        {
-            if(_ast->n_Type == IDENTIFIER)
-            {
-                std::string type;
-                type = get_type(_ast->name);
-
-                if(type == "chr")
-                {
-                    std::cout << "eroare\n";
-                }
-                else
-                if(type == "bool")
-                {
-                    std::cout << "eroare\n";
-
-                }
-                else
-                if(type == "str")
-                {
-                    std::cout << "eroare\n";
-
-                }
-                else 
-                if(type == "i32")
-                {
-                    //std::cout << "TIP: " << get_id(_ast->name, yylineno) << '\n';
-                    return get_id(_ast->name, yylineno);
-                }
             }
             else
             {
-                if(_ast->n_Type == NUMBER)
-                {
-                    //std::cout << "NUMBER: " << atoi(_ast->name.c_str()) << '\n';
-                    return atoi(_ast->name.c_str());
+                strcpy(symbolTable[varCount].nume, s);
+                symbolTable[varCount].info.int_val = intv;
+                symbolTable[varCount].info.float_val = floatv;
+                symbolTable[varCount].info.char_val = c[0];
+                symbolTable[varCount].arrSize = arrS;
+                strcpy(symbolTable[varCount].info.string_val, strv);
+                varCount++;
+            }
+        }
+    }
+}
+
+void Verif(char s[], int yylineno, int vec)
+{
+    int i;
+    int existaVariabila = 0;
+    for(i = 0; i < varCount; i++)
+    {
+        if(!strcmp(symbolTable[i].nume, s))
+        {
+            existaVariabila = 1;
+            break;
+        }
+    }
+    if(!existaVariabila)
+    {
+        sprintf(errMsg, "Linia %d, variabila %s nu este declarata!",yylineno, s);
+        print_error();
+        exit(0);
+    }
+    else
+    {
+        if(vec > 0 && symbolTable[i].arrSize == 0)
+        {
+            sprintf(errMsg, "Linia %d, variabila %s nu este un array!",yylineno, s);
+            print_error();
+            exit(0);
+        }
+        else if(vec == 0 && symbolTable[i].arrSize > 0)
+        {
+            sprintf(errMsg, "Linia %d, variabila %s este un array!",yylineno, s);
+            print_error();
+            exit(0);
+        }
+    }
+}
+
+void addInTableFunctions(char tipp[], char s[], char type[], int yylineno, int clasa, char param[])
+{
+    if(!strcmp(type, "tip"))
+    {
+        for(int i = 0; i < functionsCount; i++)
+            if(!strcmp(symbolTableFunctions[i].nume, s))
+            {
+                sprintf(errMsg, "Linia %d, functia %s nu este definita!",yylineno, s);
+                print_error();
+                exit(0);
+            }
+        strcpy(symbolTableFunctions[functionsCount].nume, s);
+        strcpy(symbolTableFunctions[functionsCount].tip, tipp);
+        symbolTableFunctions[functionsCount].inClass = clasa;
+        symbolTableFunctions[functionsCount].nrArgs = 0;
+        bzero(symbolTableFunctions[functionsCount].tipuriParam, sizeof(symbolTableFunctions[functionsCount].tipuriParam));
+        if(strcmp(param, ""))
+        {
+            char *p = strtok(param, ",");
+            while(p != NULL)
+            {
+                char aux[100];
+                char p1[100];
+                strcpy(p1, strchr(p, ' '));
+                strncpy(aux, p, strlen(p) - strlen(p1));
+                strcat(symbolTableFunctions[functionsCount].tipuriParam, aux);
+                strcat(symbolTableFunctions[functionsCount].tipuriParam, ",");
+                strcpy(symbolTableFunctions[functionsCount].val[symbolTableFunctions[functionsCount].nrArgs].tip, aux);
+                strcpy(symbolTableFunctions[functionsCount].val[symbolTableFunctions[functionsCount].nrArgs].nume, p + strlen(aux));
+                symbolTableFunctions[functionsCount].nrArgs++;
+                p = strtok(NULL, ",");
+            }
+            symbolTableFunctions[functionsCount].tipuriParam[strlen(symbolTableFunctions[functionsCount].tipuriParam) - 1] = '\0';
+        }
+        functionsCount++;
+    }
+}
+
+void VerifFct(char s[], char param[], int yylineno)
+{
+    int i;
+    int existaFunctie = 0;
+    for(i = 0; i < functionsCount; i++)
+    {
+        if(!strcmp(symbolTableFunctions[i].nume, s))
+        {
+            existaFunctie = 1;
+            break;
+        }
+    }
+    if(!existaFunctie)
+    {
+        sprintf(errMsg, "Linia %d, functia %s nu este definita!",yylineno, s);
+        print_error();
+        exit(0);
+    }
+    else
+    {
+        if(strcmp(param, symbolTableFunctions[i].tipuriParam))
+        {
+            sprintf(errMsg, "Linia %d, functia %s nu este apelata corect!",yylineno, s);
+            print_error();
+            exit(0);
+        }
+    }
+}
+
+void Clasa(char s[])
+{
+    int aux = varCount - 1;
+    while(symbolTable[aux].inClass && aux >= 0)
+    {
+        char auxchar[100];
+        bzero(&auxchar, sizeof(auxchar));
+        strcpy(auxchar, symbolTable[aux].nume);
+        strcpy(symbolTable[aux].nume, s);
+        strcat(symbolTable[aux].nume, ".");
+        strcat(symbolTable[aux].nume, auxchar);
+        symbolTable[aux].inClass = 0;
+        aux--;
+    }
+    aux = functionsCount - 1;
+    while(symbolTableFunctions[aux].inClass && aux >= 0)
+    {
+        char auxchar[100];
+        bzero(&auxchar, sizeof(auxchar));
+        strcpy(auxchar, symbolTableFunctions[aux].nume);
+        strcpy(symbolTableFunctions[aux].nume, s);
+        strcat(symbolTableFunctions[aux].nume, ".");
+        strcat(symbolTableFunctions[aux].nume, auxchar);
+        symbolTableFunctions[aux].inClass = 0;
+        aux--;   
+    }
+}
+
+int getIdValue(char s[], int yylineno)
+{
+    for(int i = 0; i < varCount; i++)
+    {
+        if(!strcmp(symbolTable[i].nume, s))
+        {
+            if(symbolTable[i].arrSize > 0)
+            {
+                sprintf(errMsg, "Linia %d, array %s folosit incorect", yylineno, s);
+                print_error();
+                exit(0);
+            }
+            return symbolTable[i].info.int_val;
+        }
+    }
+}
+
+char* getIdType(char s[])
+{
+    for(int i = 0; i < varCount; i++)
+        if(!strcmp(symbolTable[i].nume, s))
+            return symbolTable[i].tip;
+    return (char *)"no type";
+}
+
+int evalAST(struct AST* tree, int yylineno)
+{
+    if(tree->st == NULL && tree->dr == NULL)
+    {
+        if(tree->nodeType == IDENTIFICATOR)
+        {
+            char tip[10];
+            bzero(&tip, 10);
+            strcpy(tip, getIdType(tree->nume));
+            if(!strcmp(tip, "chr"))
+            {
+                sprintf(errMsg, "Linia %d: variabila %s este de tip char!", yylineno, tree->nume);
+                print_error();
+                exit(0);
+            }
+            else
+            if(!strcmp(tip, "bool"))
+            {
+                sprintf(errMsg, "Linia %d: variabila %s este de tip bool!", yylineno, tree->nume);
+                print_error();
+                exit(0);
+            }
+            else
+            if(!strcmp(tip, "str"))
+            {
+                sprintf(errMsg, "Linia %d: variabila %s este de tip string!", yylineno, tree->nume);
+                print_error();
+                exit(0);
+            }
+            else
+            {
+                if(!strcmp(tip, "i32"))
+                {   
+                    std::cout << "TIP: " <<  getIdValue(tree->nume, yylineno) << '\n';
+                    return getIdValue(tree->nume, yylineno);
                 }
-                return 0;
             }
         }
         else
         {
-            int left_value, right_value;
-            left_value = Eval(_ast->left, yylineno);
-            right_value = Eval(_ast->right, yylineno);
-
-
-            if(_ast->name == "+")
-            {
-                return left_value + right_value;
+            if(tree->nodeType == NUMAR)
+            {   
+                std::cout << "NUMAR:" << tree->nodeType << '\n';
+                return atoi(tree->nume);
             }
-            if(_ast->name == "-")
-            {
-                return left_value - right_value;
+            return 0;
+        }
+    }
+    else
+    {
+        int val_stanga, val_dreapta;
 
-            }
-            if(_ast->name == "*")
-            {
-                return left_value * right_value;
+        val_stanga = evalAST(tree->st, yylineno);
+        val_dreapta = evalAST(tree->dr, yylineno);
 
-            }
-            if(_ast->name == "/")
+        
+        if(!strcmp(tree->nume, "+")) {return val_stanga + val_dreapta;}
+        if(!strcmp(tree->nume, "-")) {return val_stanga - val_dreapta;}
+        if(!strcmp(tree->nume, "*")) {return val_stanga * val_dreapta;}
+        if(!strcmp(tree->nume, "/")) 
+        {
+            if(val_dreapta) {return val_stanga / val_dreapta;}
+            else
             {
-                if(right_value != 0)
-                {
-                    return left_value / right_value;
-                }
+                sprintf(errMsg, "Linia %d, impartirea la 0 nu se poate efectua!", yylineno);
+                print_error();
+                exit(0);
+            }
+        }
+    }
+}
+
+char *TypeOf(struct AST* tree, float nrfloat, int boolval, char sir_str[], char chr_sir[], int yylineno)
+{
+    if(tree == NULL)
+    {
+        if(nrfloat != 0)
+            return (char*)"f32";
+        if(boolval != 0)
+            return (char*)"bool";
+        if(strcmp(sir_str, ""))
+            return (char*)"str";
+        if(strcmp(chr_sir, ""))
+            return (char*)"chr";
+    }
+    else
+    {
+        if(tree->st == NULL && tree->dr == NULL)
+        {
+            if(tree->nodeType == IDENTIFICATOR)
+            {
+                char tip[10];
+                bzero(&tip, 10);
+                strcpy(tip, getIdType(tree->nume));
+                if(!strcmp(tip, "i32"))
+                    return (char*)"i32";
+                if(!strcmp(tip, "bool"))
+                    return (char*)"bool";
+                if(!strcmp(tip, "f32"))
+                    return (char*)"f32";
+            }
+            else
+            {
+                int x = evalAST(tree, yylineno);
+                return "i32";
+            }
+        }
+    }
+}
+
+int Eval(struct AST* tree, int yylineno) {
+    return evalAST(tree, yylineno);
+}
+
+int getArrVal(char nume[], int id, int yylineno)
+{
+    for(int i = 0; i < varCount; i++)
+    {
+        if(!strcmp(symbolTable[i].nume, nume))
+        {
+            if(symbolTable[i].arrSize >= id)
+                return symbolTable[i].arr[id];
+            else
+            {
+                sprintf(errMsg, "Linia %d, pozitie depasita!", yylineno);
+                print_error();
+                exit(0);
+            }
+        }     
+    }
+    sprintf(errMsg, "Linia %d, array inexistent!", yylineno);
+    print_error();
+    exit(0);
+}
+
+void actualizareTabel(char nume[], char tip[], int value, int yylineno, float fvalue, char svalue[])
+{
+    for(int i = 0; i < varCount; i++)
+    {
+        if(!strcmp(symbolTable[i].nume, nume))
+        {
+            if(strcmp(symbolTable[i].tip, tip))
+            {
+                sprintf(errMsg, "Linia %d, tip de date diferit!", yylineno);
+                print_error();
+                exit(0);
+            }
+            if(!strcmp(tip, "i32") || !strcmp(tip, "bool"))
+                symbolTable[i].info.int_val = value;
+            else
+                if(!strcmp(tip, "f32"))
+                    symbolTable[i].info.float_val = fvalue;
                 else
-                {
-                    //eroare
-                }
-            }
-
+                    if(!strcmp(tip, "str"))
+                        strcpy(symbolTable[i].info.string_val, svalue);
+                    else
+                        if(!strcmp(tip, "chr"))
+                            symbolTable[i].info.char_val = svalue[1];
+            break;
         }
     }
+}
 
-    std::string TypeOf(AST* _ast, float n_float, bool n_bool, std::string string_string, std::string string_char, int yylineno)
+char *ConstruiescRasp(char sir1[], char sir2[], char inter[3])
+{
+    char *p;
+    p = (char*)(malloc(strlen(sir1) + strlen(sir2) + 1));
+    strcpy(p, sir1);
+    strcat(p, inter);
+    strcat(p, sir2);
+    return p;
+}
+
+char *FctRetType(char fct[])
+{
+    for(int i = 0; i < functionsCount; i++)
+        if(!strcmp(symbolTableFunctions[i].nume, fct))
+            return symbolTableFunctions[i].tip;
+}
+
+void printVars(int fd)
+{
+    char sp[2], inf[510];
+    strcpy(sp, " ");
+    for(int i = 0; i < varCount; i++)
     {
-        if(_ast == nullptr)
-        {
-            if(n_float != 0)
-            {
-                return std::string("f64");
-            }
-            if(n_bool != 0)
-            {
-                return std::string("bool");
-            }
-            if(string_string != "")
-            {
-                return std::string("str");
-            }
-            if(string_char != "")
-            {
-                return std::string("chr");
-            }
-        }
-        else
-        {
-            if(_ast->left == nullptr && _ast->right == nullptr)
-            {
-                if(_ast->n_Type == IDENTIFIER)
-                {
-                    std::string type = get_type(_ast->name);
-                    if(type == "i32")
-                    {
-                        return std::string("i32");
-                    }
-                    if(type == "bool")
-                    {
-                        return std::string("bool");
-                    }if(type == "f64")
-                    {
-                        return std::string("f64");
-                    }
-                }
-                else
-                {
-                    Eval(_ast, yylineno);
-                    return "i32";
-                }
-            }
-        }
+        write(fd, symbolTable[i].nume, strlen(symbolTable[i].nume));
+        write(fd, sp, strlen(sp));
+        write(fd, symbolTable[i].tip, strlen(symbolTable[i].tip));
+        write(fd, sp, strlen(sp));
+        if(!strcmp(symbolTable[i].tip, "i32")) {snprintf(inf,100,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "str")) {snprintf(inf,500,"%s", symbolTable[i].info.string_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "f32")) {snprintf(inf,500,"%f", symbolTable[i].info.float_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "chr")) {snprintf(inf,500,"%c", symbolTable[i].info.char_val);write(fd, inf, strlen(inf));}
+        else if(!strcmp(symbolTable[i].tip, "bool")) {snprintf(inf,500,"%d", symbolTable[i].info.int_val);write(fd, inf, strlen(inf));}
+        write(fd, "\n", strlen("\n"));
     }
+}
 
-    int get_array_value(std::string _name, int _id, int yylineno)
+void printFunctions(int fd)
+{
+    char sp[2], inf[510];
+    strcpy(sp, " ");
+    for(int i = 0; i < functionsCount; i++)
     {
-        for(int i = 0; i < variable_counter; i++)
+        write(fd, symbolTableFunctions[i].tip, strlen(symbolTableFunctions[i].tip));
+        write(fd, sp, strlen(sp));
+        write(fd, symbolTableFunctions[i].nume, strlen(symbolTableFunctions[i].nume));
+        write(fd, sp, strlen(sp));
+        write(fd, "(", strlen("("));
+        int j = 0;
+        for(j=0; j<symbolTableFunctions[i].nrArgs - 1; j++)
         {
-            if(symbol_table[i].name == _name)
-            {
-                if(symbol_table[i].array_size >= _id)
-                {
-                    return symbol_table[i].array[_id];
-                }
-                else
-                {
-                    //eroare
-                }
-            }
+            write(fd, symbolTableFunctions[i].val[j].tip, strlen(symbolTableFunctions[i].val[j].tip));
+            write(fd, symbolTableFunctions[i].val[j].nume, strlen(symbolTableFunctions[i].val[j].nume));
+            write(fd, ",", strlen(","));
+            write(fd, sp, strlen(sp));
         }
-        //eroare
-    }
-
-    void update_table(std::string _name, std::string _type, int _int_value, int yylineno, int _float_value, std::string _string_value)
-    {
-        for(int i = 0; i < variable_counter; i++)
+        if(symbolTableFunctions[i].nrArgs!=0)
         {
-            if(symbol_table[i].name == _name)
-            {
-                if(symbol_table[i].type != _type)
-                {
-                    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << '\n';
-                }
-                if(_type == "i32" || _type == "bool")
-                {
-                    symbol_table[i].var_info.integer_value = _int_value;
-                }
-                else if(_type == "f32")
-                {
-                    symbol_table[i].var_info.float_value = _float_value;
-                }
-                else if(_type == "str")
-                {
-                    symbol_table[i].var_info.string_value = _string_value;
-                }
-                else if(_type == "chr")
-                {
-                    symbol_table[i].var_info.char_value = _string_value[1];
-                }
-
-                break;
-            }
+            write(fd, symbolTableFunctions[i].val[symbolTableFunctions[i].nrArgs-1].tip, strlen(symbolTableFunctions[i].val[symbolTableFunctions[i].nrArgs-1].tip));
+            write(fd, symbolTableFunctions[i].val[symbolTableFunctions[i].nrArgs-1].nume, strlen(symbolTableFunctions[i].val[symbolTableFunctions[i].nrArgs-1].nume));
         }
+        write(fd, ")", strlen(")"));
+        write(fd, "\n", strlen("\n"));
     }
-
-    std::string final(std::string first, std::string second, std::string in)
-    {
-        first += in;
-        first += second;
-        return first;
-    }
-
-    std::string FnRetType(std::string _fn)
-    {
-        for(int i = 0; i < function_counter; i++)
-        {
-            if(symbol_table_functions[i].name == _fn)
-            {
-                return symbol_table_functions[i].type;
-            }
-        }
-    }
-
-    void print_values_to_text_file(int _file_descriptor)
-    {
-        for(int i = 0; i < function_counter; i++)
-        {
-            
-        }
-    }
+}
 
 extern FILE* yyin;
 extern int yylex();
-void yyerror(char* s);
 extern char* yytext;
+void yyerror(char* s);
 extern int yylineno;
 
-#line 589 "p1.tab.c"
+
+#line 601 "X.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -608,7 +620,7 @@ extern int yylineno;
 #  endif
 # endif
 
-#include "p1.tab.h"
+#include "X.tab.h"
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {
@@ -667,8 +679,8 @@ enum yysymbol_kind_t
   YYSYMBOL_sectiunea1 = 51,                /* sectiunea1  */
   YYSYMBOL_sectiunea2 = 52,                /* sectiunea2  */
   YYSYMBOL_sectiunea3 = 53,                /* sectiunea3  */
-  YYSYMBOL_declaratievariable = 54,        /* declaratievariable  */
-  YYSYMBOL_declaratievariableClasa = 55,   /* declaratievariableClasa  */
+  YYSYMBOL_declaratieVariabila = 54,       /* declaratieVariabila  */
+  YYSYMBOL_declaratieVariabilaClasa = 55,  /* declaratieVariabilaClasa  */
   YYSYMBOL_declaratieFunctie = 56,         /* declaratieFunctie  */
   YYSYMBOL_declaratieFunctieClasa = 57,    /* declaratieFunctieClasa  */
   YYSYMBOL_lista_param = 58,               /* lista_param  */
@@ -1078,17 +1090,17 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   550,   550,   553,   556,   559,   560,   563,   564,   567,
-     568,   571,   572,   575,   576,   579,   580,   581,   582,   585,
-     586,   589,   590,   593,   598,   601,   602,   605,   606,   609,
-     610,   611,   614,   615,   616,   617,   618,   619,   620,   621,
-     622,   623,   624,   625,   629,   633,   634,   635,   636,   637,
-     638,   642,   653,   654,   655,   656,   668,   678,   683,   686,
-     687,   690,   693,   704,   705,   706,   707,   708,   709,   712,
-     713,   716,   717,   720,   723,   726,   727,   728,   729,   730,
-     731,   732,   733,   734,   737,   738,   741,   750,   759,   768,
-     777,   778,   779,   780,   781,   782,   783,   784,   787,   799,
-     817,   818,   819,   820,   821,   822
+       0,   562,   562,   565,   568,   571,   572,   575,   576,   579,
+     580,   583,   584,   587,   588,   591,   592,   593,   594,   597,
+     598,   601,   602,   605,   610,   613,   614,   617,   618,   621,
+     622,   623,   626,   627,   628,   629,   630,   631,   632,   633,
+     634,   635,   636,   637,   641,   645,   646,   647,   648,   649,
+     650,   654,   665,   666,   667,   668,   680,   690,   695,   698,
+     699,   702,   705,   716,   717,   718,   719,   720,   721,   724,
+     725,   728,   729,   732,   735,   738,   739,   740,   741,   742,
+     743,   744,   745,   746,   749,   750,   753,   762,   771,   780,
+     789,   790,   791,   792,   793,   794,   795,   796,   799,   811,
+     829,   830,   831,   832,   833,   834
 };
 #endif
 
@@ -1111,11 +1123,12 @@ static const char *const yytname[] =
   "CONSTANT", "WHILE", "END_WHILE", "DO", "EVAL", "TYPEOF", "CHAR", "NR",
   "NR_FLOAT", "'<'", "'>'", "'-'", "'+'", "'/'", "'*'", "';'", "'('",
   "')'", "','", "'['", "']'", "'.'", "$accept", "progr", "rest1", "rest2",
-  "sectiunea1", "sectiunea2", "sectiunea3", "declaratievariable",
-  "declaratievariableClasa", "declaratieFunctie", "declaratieFunctieClasa",
-  "lista_param", "param", "clasa", "sectiuneaclasa1", "sectiuneaclasa2",
-  "interior_clasa", "lista_id", "bloc", "list", "statement", "cond", "opr",
-  "if", "for", "do", "while", "e", "pseudo_e", "lista_apel", YY_NULLPTR
+  "sectiunea1", "sectiunea2", "sectiunea3", "declaratieVariabila",
+  "declaratieVariabilaClasa", "declaratieFunctie",
+  "declaratieFunctieClasa", "lista_param", "param", "clasa",
+  "sectiuneaclasa1", "sectiuneaclasa2", "interior_clasa", "lista_id",
+  "bloc", "list", "statement", "cond", "opr", "if", "for", "do", "while",
+  "e", "pseudo_e", "lista_apel", YY_NULLPTR
 };
 
 static const char *
@@ -1832,277 +1845,277 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* progr: sectiunea1 rest1  */
-#line 550 "p1.y"
+#line 562 "X.y"
                         {printf("program corect sintactic\n");}
-#line 1838 "p1.tab.c"
+#line 1851 "X.tab.c"
     break;
 
-  case 11: /* declaratievariable: TYPE lista_id  */
-#line 571 "p1.y"
-                                   { insert_table(0, 0, (yyvsp[-1].strval), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno); }
-#line 1844 "p1.tab.c"
+  case 11: /* declaratieVariabila: TYPE lista_id  */
+#line 583 "X.y"
+                                    { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 0, yylineno); }
+#line 1857 "X.tab.c"
     break;
 
-  case 12: /* declaratievariable: CONSTANT TYPE lista_id  */
-#line 572 "p1.y"
-                                             {insert_table(1, 0, (yyvsp[-2].strval), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno);}
-#line 1850 "p1.tab.c"
+  case 12: /* declaratieVariabila: CONSTANT TYPE lista_id  */
+#line 584 "X.y"
+                                             {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 0, yylineno);}
+#line 1863 "X.tab.c"
     break;
 
-  case 13: /* declaratievariableClasa: TYPE lista_id  */
-#line 575 "p1.y"
-                                        { insert_table(0, 0, (yyvsp[-1].strval), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno); }
-#line 1856 "p1.tab.c"
+  case 13: /* declaratieVariabilaClasa: TYPE lista_id  */
+#line 587 "X.y"
+                                         { addInTable(0, 0, (yyvsp[-1].strval), "tip", 0, 0, "", "", 1, yylineno); }
+#line 1869 "X.tab.c"
     break;
 
-  case 14: /* declaratievariableClasa: CONSTANT TYPE lista_id  */
-#line 576 "p1.y"
-                                                  {insert_table(1, 0, (yyvsp[-2].strval), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno);}
-#line 1862 "p1.tab.c"
+  case 14: /* declaratieVariabilaClasa: CONSTANT TYPE lista_id  */
+#line 588 "X.y"
+                                                  {addInTable(1, 0, (yyvsp[-2].strval), "tip", 0, 0, "", "", 1, yylineno);}
+#line 1875 "X.tab.c"
     break;
 
   case 15: /* declaratieFunctie: TYPE ID '(' lista_param ')' BEGIN_FN list END_FN  */
-#line 579 "p1.y"
-                                                                     { insert_table_fn((yyvsp[-7].strval), (yyvsp[-6].strval), std::string("type"), yylineno, 0, (yyvsp[-4].strval));}
-#line 1868 "p1.tab.c"
+#line 591 "X.y"
+                                                                     { addInTableFunctions((yyvsp[-7].strval), (yyvsp[-6].strval), "tip", yylineno, 0, (yyvsp[-4].strval));}
+#line 1881 "X.tab.c"
     break;
 
   case 16: /* declaratieFunctie: TYPE ID '(' ')' BEGIN_FN list END_FN  */
-#line 580 "p1.y"
-                                                         { insert_table_fn((yyvsp[-6].strval), (yyvsp[-5].strval), std::string("type"), yylineno, 0, "");}
-#line 1874 "p1.tab.c"
+#line 592 "X.y"
+                                                         { addInTableFunctions((yyvsp[-6].strval), (yyvsp[-5].strval), "tip", yylineno, 0, "");}
+#line 1887 "X.tab.c"
     break;
 
   case 17: /* declaratieFunctie: TYPE ID '(' lista_param ')' BEGIN_FN list RETURN e ';' END_FN  */
-#line 581 "p1.y"
-                                                                                  { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-10].strval), (yyvsp[-9].strval), std::string("type"), yylineno, 0, (yyvsp[-7].strval));}
-#line 1880 "p1.tab.c"
+#line 593 "X.y"
+                                                                                  { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-10].strval), (yyvsp[-9].strval), "tip", yylineno, 0, (yyvsp[-7].strval));}
+#line 1893 "X.tab.c"
     break;
 
   case 18: /* declaratieFunctie: TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN  */
-#line 582 "p1.y"
-                                                                      { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-9].strval), (yyvsp[-8].strval), std::string("type"), yylineno, 0, std::string(""));}
-#line 1886 "p1.tab.c"
+#line 594 "X.y"
+                                                                      { int val = evalAST((yyvsp[-2].tree), yylineno); addInTableFunctions((yyvsp[-9].strval), (yyvsp[-8].strval), "tip", yylineno, 0, "");}
+#line 1899 "X.tab.c"
     break;
 
   case 19: /* declaratieFunctieClasa: TYPE ID '(' lista_param ')'  */
-#line 585 "p1.y"
-                                                     { insert_table_fn((yyvsp[-4].strval), (yyvsp[-3].strval), std::string("type"), yylineno, 1, (yyvsp[-1].strval));}
-#line 1892 "p1.tab.c"
+#line 597 "X.y"
+                                                     { addInTableFunctions((yyvsp[-4].strval), (yyvsp[-3].strval), "tip", yylineno, 1, (yyvsp[-1].strval));}
+#line 1905 "X.tab.c"
     break;
 
   case 20: /* declaratieFunctieClasa: TYPE ID '(' ')'  */
-#line 586 "p1.y"
-                                         { insert_table_fn((yyvsp[-3].strval), (yyvsp[-2].strval), std::string("type"), yylineno, 1, std::string(""));}
-#line 1898 "p1.tab.c"
+#line 598 "X.y"
+                                         { addInTableFunctions((yyvsp[-3].strval), (yyvsp[-2].strval), "tip", yylineno, 1, "");}
+#line 1911 "X.tab.c"
     break;
 
   case 21: /* lista_param: param  */
-#line 589 "p1.y"
+#line 601 "X.y"
                     {(yyval.strval) = (yyvsp[0].strval);}
-#line 1904 "p1.tab.c"
+#line 1917 "X.tab.c"
     break;
 
   case 22: /* lista_param: param ',' lista_param  */
-#line 590 "p1.y"
-                                    { (yyval.strval) = strdup(final((yyvsp[-2].strval), (yyvsp[0].strval), std::string(",")).c_str()); }
-#line 1910 "p1.tab.c"
+#line 602 "X.y"
+                                    { (yyval.strval) = ConstruiescRasp((yyvsp[-2].strval), (yyvsp[0].strval), ",");}
+#line 1923 "X.tab.c"
     break;
 
   case 23: /* param: TYPE ID  */
-#line 593 "p1.y"
+#line 605 "X.y"
                 {
-                (yyval.strval) = strdup(final((yyvsp[-1].strval), (yyvsp[0].strval), std::string(" ")).c_str());
+                (yyval.strval) = ConstruiescRasp((yyvsp[-1].strval), (yyvsp[0].strval), " ");
                }
-#line 1918 "p1.tab.c"
+#line 1931 "X.tab.c"
     break;
 
   case 24: /* clasa: BEGIN_CLASS ID interior_clasa END_CLASS  */
-#line 598 "p1.y"
-                                                {classs((yyvsp[-2].strval));}
-#line 1924 "p1.tab.c"
+#line 610 "X.y"
+                                                {Clasa((yyvsp[-2].strval));}
+#line 1937 "X.tab.c"
     break;
 
   case 32: /* lista_id: ID  */
-#line 614 "p1.y"
-              {insert_table(0, 0, (yyvsp[0].strval), std::string("variable"), 0, 0, '\0', std::string(""), 0, yylineno);}
-#line 1930 "p1.tab.c"
+#line 626 "X.y"
+              {addInTable(0, 0, (yyvsp[0].strval), "variabila", 0, 0, "", "", 0, yylineno);}
+#line 1943 "X.tab.c"
     break;
 
   case 33: /* lista_id: ID '[' NR ']'  */
-#line 615 "p1.y"
-                         { insert_table(0, (yyvsp[-1].intval), (yyvsp[-3].strval), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 1936 "p1.tab.c"
+#line 627 "X.y"
+                         { addInTable(0, (yyvsp[-1].intval), (yyvsp[-3].strval), "variabila", 0, 0, "", "", 0, yylineno);}
+#line 1949 "X.tab.c"
     break;
 
   case 34: /* lista_id: ID ',' lista_id  */
-#line 616 "p1.y"
-                           { insert_table(0, 0, (yyvsp[-2].strval), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 1942 "p1.tab.c"
+#line 628 "X.y"
+                           { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, "", "", 0, yylineno);}
+#line 1955 "X.tab.c"
     break;
 
   case 35: /* lista_id: ID '[' NR ']' ',' lista_id  */
-#line 617 "p1.y"
-                                      { insert_table(0, (yyvsp[-3].intval), (yyvsp[-5].strval), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 1948 "p1.tab.c"
+#line 629 "X.y"
+                                      { addInTable(0, (yyvsp[-3].intval), (yyvsp[-5].strval), "variabila", 0, 0, "", "", 0, yylineno);}
+#line 1961 "X.tab.c"
     break;
 
   case 36: /* lista_id: ID ASSIGN e  */
-#line 618 "p1.y"
-                       { int val = Eval((yyvsp[0].tree), yylineno); insert_table(0, 0, (yyvsp[-2].strval), std::string("variable"), val, 0, '\0', "", 0, yylineno);}
-#line 1954 "p1.tab.c"
+#line 630 "X.y"
+                       { int val = Eval((yyvsp[0].tree), yylineno); addInTable(0, 0, (yyvsp[-2].strval), "variabila", val, 0, "", "", 0, yylineno);}
+#line 1967 "X.tab.c"
     break;
 
   case 37: /* lista_id: ID ASSIGN e ',' lista_id  */
-#line 619 "p1.y"
-                                    { int val = Eval((yyvsp[-2].tree), yylineno); insert_table(0, 0, (yyvsp[-4].strval), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 1960 "p1.tab.c"
+#line 631 "X.y"
+                                    { int val = Eval((yyvsp[-2].tree), yylineno); addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, "", "", 0, yylineno);}
+#line 1973 "X.tab.c"
     break;
 
   case 38: /* lista_id: ID ASSIGN NR_FLOAT  */
-#line 620 "p1.y"
-                              { insert_table(0, 0, (yyvsp[-2].strval), std::string("variable"), 0, (yyvsp[0].floatval), '\0', "", 0, yylineno);}
-#line 1966 "p1.tab.c"
+#line 632 "X.y"
+                              { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, (yyvsp[0].floatval), "", "", 0, yylineno);}
+#line 1979 "X.tab.c"
     break;
 
   case 39: /* lista_id: ID ASSIGN NR_FLOAT ',' lista_id  */
-#line 621 "p1.y"
-                                           { insert_table(0, 0, (yyvsp[-4].strval), std::string("variable"), 0, (yyvsp[-2].floatval), '\0', "", 0, yylineno);}
-#line 1972 "p1.tab.c"
+#line 633 "X.y"
+                                           { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, (yyvsp[-2].floatval), "", "", 0, yylineno);}
+#line 1985 "X.tab.c"
     break;
 
   case 40: /* lista_id: ID ASSIGN STRING  */
-#line 622 "p1.y"
-                            { insert_table(0, 0, (yyvsp[-2].strval), std::string("variable"), 0, 0, '\0', (yyvsp[0].strval), 0, yylineno);}
-#line 1978 "p1.tab.c"
+#line 634 "X.y"
+                            { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, "", (yyvsp[0].strval), 0, yylineno);}
+#line 1991 "X.tab.c"
     break;
 
   case 41: /* lista_id: ID ASSIGN STRING ',' lista_id  */
-#line 623 "p1.y"
-                                         { insert_table(0, 0, (yyvsp[-4].strval), std::string("variable"), 0, 0, '\0', (yyvsp[-2].strval), 0, yylineno);}
-#line 1984 "p1.tab.c"
+#line 635 "X.y"
+                                         { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, "", (yyvsp[-2].strval), 0, yylineno);}
+#line 1997 "X.tab.c"
     break;
 
   case 42: /* lista_id: ID ASSIGN CHAR  */
-#line 624 "p1.y"
-                          { insert_table(0, 0, (yyvsp[-2].strval), std::string("variable"), 0, 0, (yyvsp[0].strval)[0], std::string(""), 0, yylineno);}
-#line 1990 "p1.tab.c"
+#line 636 "X.y"
+                          { addInTable(0, 0, (yyvsp[-2].strval), "variabila", 0, 0, (yyvsp[0].strval), "", 0, yylineno);}
+#line 2003 "X.tab.c"
     break;
 
   case 43: /* lista_id: ID ASSIGN CHAR ',' lista_id  */
-#line 625 "p1.y"
-                                       { insert_table(0, 0, (yyvsp[-4].strval), std::string("variable"), 0, 0, (yyvsp[-2].strval)[0], std::string(""), 0, yylineno);}
-#line 1996 "p1.tab.c"
+#line 637 "X.y"
+                                       { addInTable(0, 0, (yyvsp[-4].strval), "variabila", 0, 0, (yyvsp[-2].strval), "", 0, yylineno);}
+#line 2009 "X.tab.c"
     break;
 
   case 51: /* statement: ID ASSIGN e  */
-#line 642 "p1.y"
+#line 654 "X.y"
                         { 
-                            check((yyvsp[-2].strval), yylineno, 0);
-                            if(strcmp(get_type(std::string((yyvsp[-2].strval))).c_str(), "i32"))
+                            Verif((yyvsp[-2].strval), yylineno, 0);
+                            if(strcmp(getIdType((yyvsp[-2].strval)), "i32"))
                             {
-                                sprintf(error_message, "Linia %d, type de date diferit", yylineno);
-                                handle_error();
+                                sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
+                                print_error();
                                 exit(0);
                             }
                             int val = Eval((yyvsp[0].tree), yylineno);
-                            update_table((yyvsp[-2].strval), "i32", val, yylineno, 0, "");
+                            actualizareTabel((yyvsp[-2].strval), "i32", val, yylineno, 0, "");
                         }
-#line 2012 "p1.tab.c"
+#line 2025 "X.tab.c"
     break;
 
   case 52: /* statement: ID '(' lista_apel ')'  */
-#line 653 "p1.y"
-                                 {check_fn((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);}
-#line 2018 "p1.tab.c"
+#line 665 "X.y"
+                                 {VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);}
+#line 2031 "X.tab.c"
     break;
 
   case 53: /* statement: TYPEOF '(' pseudo_e ')'  */
-#line 654 "p1.y"
+#line 666 "X.y"
                                    {printf("%s\n", (yyvsp[-1].strval));}
-#line 2024 "p1.tab.c"
+#line 2037 "X.tab.c"
     break;
 
   case 54: /* statement: EVAL '(' e ')'  */
-#line 655 "p1.y"
+#line 667 "X.y"
                           {printf("%d\n", Eval((yyvsp[-1].tree), yylineno));}
-#line 2030 "p1.tab.c"
+#line 2043 "X.tab.c"
     break;
 
   case 55: /* statement: ID '.' ID ASSIGN e  */
-#line 656 "p1.y"
+#line 668 "X.y"
                               { 
-                                snprintf(internal_buffer,100,"%s.%s", (yyvsp[-4].strval), (yyvsp[-2].strval));
-                                check(std::string(internal_buffer), yylineno, 0);
-                                if(strcmp(strdup(get_type((yyvsp[-4].strval)).c_str()), "i32"))
+                                snprintf(buff,100,"%s.%s", (yyvsp[-4].strval), (yyvsp[-2].strval));
+                                Verif(buff, yylineno, 0);
+                                if(strcmp(getIdType((yyvsp[-4].strval)), "i32"))
                                 {
-                                    sprintf(error_message, "Linia %d, type de date diferit", yylineno);
-                                    handle_error();
+                                    sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
+                                    print_error();
                                     exit(0);
                                 }
                                 int val = Eval((yyvsp[0].tree), yylineno);
-                                update_table(std::string(internal_buffer), "i32", val, yylineno, 0, "");
+                                actualizareTabel(buff, "i32", val, yylineno, 0, "");
                               }
-#line 2047 "p1.tab.c"
+#line 2060 "X.tab.c"
     break;
 
   case 56: /* statement: ID ASSIGN NR_FLOAT  */
-#line 668 "p1.y"
+#line 680 "X.y"
                               {
-                                check((yyvsp[-2].strval), yylineno, 0);
-                                if(strcmp(strdup(get_type((yyvsp[-2].strval)).c_str()), "f32"))
+                                Verif((yyvsp[-2].strval), yylineno, 0);
+                                if(strcmp(getIdType((yyvsp[-2].strval)), "f32"))
                                 {
-                                    sprintf(error_message, "Linia %d, type de date diferit", yylineno);
-                                    handle_error();
+                                    sprintf(errMsg, "Linia %d, tip de date diferit", yylineno);
+                                    print_error();
                                     exit(0);
                                 }
-                                update_table((yyvsp[-2].strval), "f32", 0, yylineno, (yyvsp[0].floatval), "");
+                                actualizareTabel((yyvsp[-2].strval), "f32", 0, yylineno, (yyvsp[0].floatval), "");
                               }
-#line 2062 "p1.tab.c"
+#line 2075 "X.tab.c"
     break;
 
   case 57: /* statement: ID '.' ID '(' lista_apel ')'  */
-#line 678 "p1.y"
+#line 690 "X.y"
                                         {
-                                            snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval));
-                                            check_fn(internal_buffer, (yyvsp[-1].strval), yylineno);
+                                            snprintf(buff,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval));
+                                            VerifFct(buff, (yyvsp[-1].strval), yylineno);
 
                                         }
-#line 2072 "p1.tab.c"
+#line 2085 "X.tab.c"
     break;
 
   case 58: /* statement: ID '[' NR ']' ASSIGN e  */
-#line 683 "p1.y"
-                                  { check((yyvsp[-5].strval), yylineno, (yyvsp[-3].intval));}
-#line 2078 "p1.tab.c"
+#line 695 "X.y"
+                                  { Verif((yyvsp[-5].strval), yylineno, (yyvsp[-3].intval));}
+#line 2091 "X.tab.c"
     break;
 
   case 59: /* cond: '(' cond ')'  */
-#line 686 "p1.y"
+#line 698 "X.y"
                     {(yyval.intval) = (yyvsp[-1].intval);}
-#line 2084 "p1.tab.c"
+#line 2097 "X.tab.c"
     break;
 
   case 60: /* cond: cond AND cond  */
-#line 687 "p1.y"
+#line 699 "X.y"
                      { int rez1=(yyvsp[-2].intval); int rez2=(yyvsp[0].intval); 
                        (yyval.intval)=(rez1 && rez2);
                      }
-#line 2092 "p1.tab.c"
+#line 2105 "X.tab.c"
     break;
 
   case 61: /* cond: cond OR cond  */
-#line 690 "p1.y"
+#line 702 "X.y"
                     { int rez1=(yyvsp[-2].intval); int rez2=(yyvsp[0].intval);
                       (yyval.intval)=(rez1 || rez2);
                     }
-#line 2100 "p1.tab.c"
+#line 2113 "X.tab.c"
     break;
 
   case 62: /* cond: e opr e  */
-#line 693 "p1.y"
+#line 705 "X.y"
                { 
-                int rez1=Eval((yyvsp[-2].tree), yylineno); int rez2=Eval((yyvsp[0].tree), yylineno);
+                int rez1=evalAST((yyvsp[-2].tree), yylineno); int rez2=evalAST((yyvsp[0].tree), yylineno);
                 if (strcmp((yyvsp[-1].strval), "less_equal")) (yyval.intval)=(rez1 <= rez2);
                 if (strcmp((yyvsp[-1].strval), "greater_equal")) (yyval.intval)=(rez1 >= rez2);
                 if (strcmp((yyvsp[-1].strval), "not_equal")) (yyval.intval)=(rez1 != rez2);
@@ -2110,295 +2123,295 @@ yyreduce:
                 if (strcmp((yyvsp[-1].strval), ">")) (yyval.intval)=(rez1 > rez2);
                 if (strcmp((yyvsp[-1].strval), "<")) (yyval.intval)=(rez1 < rez2);
                 }
-#line 2114 "p1.tab.c"
+#line 2127 "X.tab.c"
     break;
 
   case 63: /* opr: LESS_EQ  */
-#line 704 "p1.y"
+#line 716 "X.y"
               {(yyval.strval) = (yyvsp[0].strval);}
-#line 2120 "p1.tab.c"
+#line 2133 "X.tab.c"
     break;
 
   case 64: /* opr: GREATER_EQ  */
-#line 705 "p1.y"
+#line 717 "X.y"
                  {(yyval.strval) = (yyvsp[0].strval);}
-#line 2126 "p1.tab.c"
+#line 2139 "X.tab.c"
     break;
 
   case 65: /* opr: NOT_EQ  */
-#line 706 "p1.y"
+#line 718 "X.y"
              {(yyval.strval) = (yyvsp[0].strval);}
-#line 2132 "p1.tab.c"
+#line 2145 "X.tab.c"
     break;
 
   case 66: /* opr: EQ  */
-#line 707 "p1.y"
+#line 719 "X.y"
           {(yyval.strval) = (yyvsp[0].strval);}
-#line 2138 "p1.tab.c"
+#line 2151 "X.tab.c"
     break;
 
   case 67: /* opr: '>'  */
-#line 708 "p1.y"
+#line 720 "X.y"
           {(yyval.strval) = ">";}
-#line 2144 "p1.tab.c"
+#line 2157 "X.tab.c"
     break;
 
   case 68: /* opr: '<'  */
-#line 709 "p1.y"
+#line 721 "X.y"
           {(yyval.strval) = "<";}
-#line 2150 "p1.tab.c"
+#line 2163 "X.tab.c"
     break;
 
   case 75: /* e: e '+' e  */
-#line 726 "p1.y"
-            { (yyval.tree) = AST_Init("+", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2156 "p1.tab.c"
+#line 738 "X.y"
+            { (yyval.tree) = buildAST("+", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+#line 2169 "X.tab.c"
     break;
 
   case 76: /* e: e '-' e  */
-#line 727 "p1.y"
-            { (yyval.tree) = AST_Init("-", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2162 "p1.tab.c"
+#line 739 "X.y"
+            { (yyval.tree) = buildAST("-", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+#line 2175 "X.tab.c"
     break;
 
   case 77: /* e: e '*' e  */
-#line 728 "p1.y"
-            { (yyval.tree) = AST_Init("*", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2168 "p1.tab.c"
+#line 740 "X.y"
+            { (yyval.tree) = buildAST("*", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+#line 2181 "X.tab.c"
     break;
 
   case 78: /* e: e '/' e  */
-#line 729 "p1.y"
-            { (yyval.tree) = AST_Init("/", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
-#line 2174 "p1.tab.c"
+#line 741 "X.y"
+            { (yyval.tree) = buildAST("/", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+#line 2187 "X.tab.c"
     break;
 
   case 79: /* e: '(' e ')'  */
-#line 730 "p1.y"
+#line 742 "X.y"
               { (yyval.tree) = (yyvsp[-1].tree); }
-#line 2180 "p1.tab.c"
+#line 2193 "X.tab.c"
     break;
 
   case 80: /* e: ID  */
-#line 731 "p1.y"
-       { check((yyvsp[0].strval), yylineno, 0); (yyval.tree) = AST_Init((yyvsp[0].strval), NULL, NULL, IDENTIFIER);}
-#line 2186 "p1.tab.c"
+#line 743 "X.y"
+       { Verif((yyvsp[0].strval), yylineno, 0); (yyval.tree) = buildAST((yyvsp[0].strval), NULL, NULL, IDENTIFICATOR);}
+#line 2199 "X.tab.c"
     break;
 
   case 81: /* e: NR  */
-#line 732 "p1.y"
-       { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", (yyvsp[0].intval)); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
-#line 2192 "p1.tab.c"
+#line 744 "X.y"
+       { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", (yyvsp[0].intval)); (yyval.tree) = buildAST(nr, NULL, NULL, NUMAR); }
+#line 2205 "X.tab.c"
     break;
 
   case 82: /* e: ID '[' NR ']'  */
-#line 733 "p1.y"
-                  {check((yyvsp[-3].strval), yylineno, 1); int val = get_array_value((yyvsp[-3].strval), (yyvsp[-1].intval), yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
-#line 2198 "p1.tab.c"
+#line 745 "X.y"
+                  {Verif((yyvsp[-3].strval), yylineno, 1); int val = getArrVal((yyvsp[-3].strval), (yyvsp[-1].intval), yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); (yyval.tree) = buildAST(nr, NULL, NULL, NUMAR); }
+#line 2211 "X.tab.c"
     break;
 
   case 83: /* e: ID '(' lista_apel ')'  */
-#line 734 "p1.y"
-                          { check_fn((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);
-                            (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER);
+#line 746 "X.y"
+                          { VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno);
+                            (yyval.tree) = buildAST("0", NULL, NULL, NUMAR);
                           }
-#line 2206 "p1.tab.c"
+#line 2219 "X.tab.c"
     break;
 
   case 84: /* e: ID '.' ID  */
-#line 737 "p1.y"
-              { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); check(std::string(internal_buffer), yylineno, 0);  (yyval.tree) = AST_Init((yyvsp[-2].strval), NULL, NULL, IDENTIFIER);}
-#line 2212 "p1.tab.c"
+#line 749 "X.y"
+              { snprintf(buff,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); Verif(buff, yylineno, 0);  (yyval.tree) = buildAST((yyvsp[-2].strval), NULL, NULL, IDENTIFICATOR);}
+#line 2225 "X.tab.c"
     break;
 
   case 85: /* e: ID '.' ID '(' lista_apel ')'  */
-#line 738 "p1.y"
-                                 { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); check_fn(std::string(internal_buffer), (yyvsp[-3].strval), yylineno); (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER);}
-#line 2218 "p1.tab.c"
+#line 750 "X.y"
+                                 { snprintf(buff,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); VerifFct(buff, (yyvsp[-3].strval), yylineno); (yyval.tree) = buildAST("0", NULL, NULL, NUMAR);}
+#line 2231 "X.tab.c"
     break;
 
   case 86: /* pseudo_e: pseudo_e '+' pseudo_e  */
-#line 741 "p1.y"
+#line 753 "X.y"
                                  {
                                     if(strcmp((yyvsp[-2].strval), (yyvsp[0].strval)))
                                     {
-                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
-                                        handle_error();
+                                        sprintf(errMsg, "Linia %d, tip de date diferit!", yylineno);
+                                        print_error();
                                         exit(0);
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2232 "p1.tab.c"
+#line 2245 "X.tab.c"
     break;
 
   case 87: /* pseudo_e: pseudo_e '-' pseudo_e  */
-#line 750 "p1.y"
+#line 762 "X.y"
                                  {
                                     if(strcmp((yyvsp[-2].strval), (yyvsp[0].strval)))
                                     {
-                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
-                                        handle_error();
+                                        sprintf(errMsg, "Linia %d, tip de date diferit!", yylineno);
+                                        print_error();
                                         exit(0);
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2246 "p1.tab.c"
+#line 2259 "X.tab.c"
     break;
 
   case 88: /* pseudo_e: pseudo_e '/' pseudo_e  */
-#line 759 "p1.y"
+#line 771 "X.y"
                                  {
                                     if(strcmp((yyvsp[-2].strval), (yyvsp[0].strval)))
                                     {
-                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
-                                        handle_error();
+                                        sprintf(errMsg, "Linia %d, tip de date diferit!", yylineno);
+                                        print_error();
                                         exit(0);
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2260 "p1.tab.c"
+#line 2273 "X.tab.c"
     break;
 
   case 89: /* pseudo_e: pseudo_e '*' pseudo_e  */
-#line 768 "p1.y"
+#line 780 "X.y"
                                  {
                                     if(strcmp((yyvsp[-2].strval), (yyvsp[0].strval)))
                                     {
-                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
-                                        handle_error();
+                                        sprintf(errMsg, "Linia %d, tip de date diferit!", yylineno);
+                                        print_error();
                                         exit(0);
                                     }
                                     (yyval.strval) = (yyvsp[-2].strval);
                                  }
-#line 2274 "p1.tab.c"
+#line 2287 "X.tab.c"
     break;
 
   case 90: /* pseudo_e: '(' pseudo_e ')'  */
-#line 777 "p1.y"
+#line 789 "X.y"
                             { (yyval.strval) = (yyvsp[-1].strval); }
-#line 2280 "p1.tab.c"
+#line 2293 "X.tab.c"
     break;
 
   case 91: /* pseudo_e: ID  */
-#line 778 "p1.y"
-              {check((yyvsp[0].strval), yylineno, 0); (yyval.strval) = strdup(get_type((yyvsp[0].strval)).c_str());}
-#line 2286 "p1.tab.c"
+#line 790 "X.y"
+              {Verif((yyvsp[0].strval), yylineno, 0); (yyval.strval) = getIdType((yyvsp[0].strval));}
+#line 2299 "X.tab.c"
     break;
 
   case 92: /* pseudo_e: NR  */
-#line 779 "p1.y"
+#line 791 "X.y"
               {(yyval.strval) = "i32";}
-#line 2292 "p1.tab.c"
+#line 2305 "X.tab.c"
     break;
 
   case 93: /* pseudo_e: NR_FLOAT  */
-#line 780 "p1.y"
+#line 792 "X.y"
                     {(yyval.strval) = "f32";}
-#line 2298 "p1.tab.c"
+#line 2311 "X.tab.c"
     break;
 
   case 94: /* pseudo_e: ID '[' NR ']'  */
-#line 781 "p1.y"
-                         {check((yyvsp[-3].strval), yylineno, 1); (yyval.strval) = strdup(get_type((yyvsp[-3].strval)).c_str());}
-#line 2304 "p1.tab.c"
+#line 793 "X.y"
+                         {Verif((yyvsp[-3].strval), yylineno, 1); (yyval.strval) = getIdType((yyvsp[-3].strval));}
+#line 2317 "X.tab.c"
     break;
 
   case 95: /* pseudo_e: ID '(' lista_apel ')'  */
-#line 782 "p1.y"
-                                 { check_fn((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno); (yyval.strval) = strdup(FnRetType((yyvsp[-3].strval)).c_str());}
-#line 2310 "p1.tab.c"
+#line 794 "X.y"
+                                 { VerifFct((yyvsp[-3].strval), (yyvsp[-1].strval), yylineno); (yyval.strval) = FctRetType((yyvsp[-3].strval));}
+#line 2323 "X.tab.c"
     break;
 
   case 96: /* pseudo_e: ID '.' ID  */
-#line 783 "p1.y"
-                     {snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); check((yyvsp[-2].strval), yylineno, 1); (yyval.strval) = strdup(get_type(internal_buffer).c_str());}
-#line 2316 "p1.tab.c"
+#line 795 "X.y"
+                     {snprintf(buff,100,"%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval)); Verif((yyvsp[-2].strval), yylineno, 1); (yyval.strval) = getIdType(buff);}
+#line 2329 "X.tab.c"
     break;
 
   case 97: /* pseudo_e: ID '.' ID '(' lista_apel ')'  */
-#line 784 "p1.y"
-                                        { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); check_fn(internal_buffer, (yyvsp[-1].strval), yylineno); (yyval.strval) = strdup(FnRetType(internal_buffer).c_str());}
-#line 2322 "p1.tab.c"
+#line 796 "X.y"
+                                        { snprintf(buff,100,"%s.%s", (yyvsp[-5].strval), (yyvsp[-3].strval)); VerifFct(buff, (yyvsp[-1].strval), yylineno); (yyval.strval) = FctRetType(buff);}
+#line 2335 "X.tab.c"
     break;
 
   case 98: /* lista_apel: e  */
-#line 787 "p1.y"
+#line 799 "X.y"
                {
                 struct AST* tree = (yyvsp[0].tree);
-                if(tree->left == NULL && tree->right == NULL)
+                if(tree->st == NULL && tree->dr == NULL)
                 {
-                    if(tree->n_Type == IDENTIFIER)
-                        (yyval.strval) = strdup(get_type(tree->name).c_str());
+                    if(tree->nodeType == IDENTIFICATOR)
+                        (yyval.strval) = getIdType(tree->nume);
                     else
                         (yyval.strval) = "i32";
                 }
                 else
                     (yyval.strval) = "i32";
             }
-#line 2339 "p1.tab.c"
+#line 2352 "X.tab.c"
     break;
 
   case 99: /* lista_apel: lista_apel ',' e  */
-#line 799 "p1.y"
+#line 811 "X.y"
                               {
                     struct AST* tree = (yyvsp[0].tree);
-                    char type[20];
-                        if(tree->left == NULL && tree->right == NULL)
+                    char tip[20];
+                        if(tree->st == NULL && tree->dr == NULL)
                         {
-                            if(tree->n_Type == IDENTIFIER)
-                                strcpy(type, strdup(get_type(tree->name).c_str()));
+                            if(tree->nodeType == IDENTIFICATOR)
+                                strcpy(tip, getIdType(tree->nume));
                             else
-                                strcpy(type, "i32");
+                                strcpy(tip, "i32");
                         }
                         else
-                            strcpy(type, "i32");
-                        strcpy(internal_buffer, (yyvsp[-2].strval));
-                        strcat(internal_buffer, ",");
-                        strcat(internal_buffer, type);
-                        (yyval.strval) = internal_buffer;
-                        // printf("%s.\n", type);
+                            strcpy(tip, "i32");
+                        strcpy(buff, (yyvsp[-2].strval));
+                        strcat(buff, ",");
+                        strcat(buff, tip);
+                        (yyval.strval) = buff;
+                        // printf("%s.\n", tip);
                 }
-#line 2362 "p1.tab.c"
+#line 2375 "X.tab.c"
     break;
 
   case 100: /* lista_apel: NR_FLOAT  */
-#line 817 "p1.y"
+#line 829 "X.y"
                       {(yyval.strval) = "f32";}
-#line 2368 "p1.tab.c"
+#line 2381 "X.tab.c"
     break;
 
   case 101: /* lista_apel: lista_apel ',' NR_FLOAT  */
-#line 818 "p1.y"
-                                     { snprintf(internal_buffer,100,"%s,float",(yyvsp[-2].strval)); (yyval.strval) = internal_buffer;}
-#line 2374 "p1.tab.c"
+#line 830 "X.y"
+                                     { snprintf(buff,100,"%s,float",(yyvsp[-2].strval)); (yyval.strval) = buff;}
+#line 2387 "X.tab.c"
     break;
 
   case 102: /* lista_apel: CHAR  */
-#line 819 "p1.y"
+#line 831 "X.y"
                   {(yyval.strval) = "chr";}
-#line 2380 "p1.tab.c"
+#line 2393 "X.tab.c"
     break;
 
   case 103: /* lista_apel: lista_apel ',' CHAR  */
-#line 820 "p1.y"
-                                 {snprintf(internal_buffer,100,"%s,char",(yyvsp[-2].strval)); (yyval.strval) = internal_buffer;}
-#line 2386 "p1.tab.c"
+#line 832 "X.y"
+                                 {snprintf(buff,100,"%s,char",(yyvsp[-2].strval)); (yyval.strval) = buff;}
+#line 2399 "X.tab.c"
     break;
 
   case 104: /* lista_apel: STRING  */
-#line 821 "p1.y"
+#line 833 "X.y"
                     {(yyval.strval) = "str";}
-#line 2392 "p1.tab.c"
+#line 2405 "X.tab.c"
     break;
 
   case 105: /* lista_apel: lista_apel ',' STRING  */
-#line 822 "p1.y"
-                                   {snprintf(internal_buffer,100,"%s,string",(yyvsp[-2].strval)); (yyval.strval) = internal_buffer;}
-#line 2398 "p1.tab.c"
+#line 834 "X.y"
+                                   {snprintf(buff,100,"%s,string",(yyvsp[-2].strval)); (yyval.strval) = buff;}
+#line 2411 "X.tab.c"
     break;
 
 
-#line 2402 "p1.tab.c"
+#line 2415 "X.tab.c"
 
       default: break;
     }
@@ -2591,7 +2604,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 825 "p1.y"
+#line 837 "X.y"
 
 
 void yyerror(char * s)
@@ -2601,10 +2614,11 @@ void yyerror(char * s)
 
 int main(int argc, char** argv)
 {
-    symbol_table_descriptor = open("symbol_table.txt", O_RDWR|O_TRUNC);
-    symbol_table_function_descriptor = open("symbol_table_functions.txt", O_RDWR|O_TRUNC);
+    fd = open("symbol_table.txt", O_RDWR|O_TRUNC);
+    fd1 = open("symbol_table_functions.txt", O_RDWR|O_TRUNC);
+    initialize();
     yyin = fopen(argv[1],"r");
     yyparse();
-    print_values_to_text_file(symbol_table_descriptor);
-    print_values_to_text_file(symbol_table_function_descriptor);
+    printVars(fd);
+    printFunctions(fd1);
 }

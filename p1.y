@@ -36,15 +36,15 @@
     class symbol_table_class
     {
     public:
-        std::string name;
-        std::string type;
+        std::string name = "";
+        std::string type = "";
         informations var_info;
-        int local;
-        bool is_constant;
-        bool is_class;
+        int local = 0;
+        bool is_constant = 0;
+        bool is_class = 0;
         int array_size = 0;
-        int array[100];
-        int elements;
+        int array[100] = {'\0'};
+        int elements = 0;
     };
 
     class parameters
@@ -96,12 +96,13 @@
 
     void insert_table(bool _is_constant, int _array_size, std::string _string, std::string _type, int _int_value, float _float_value, char _char_value, std::string _string_value, bool _is_class, int yylineno)
     {
+        //std::cout << _string << " " << _type << '\n';
         if(_type == "type")
         {
             int temp = variable_counter - 1;
             while(symbol_table[temp].type == "" && temp >= 0)
             {
-                symbol_table[temp].type = _type;
+                symbol_table[temp].type = _string;
                 symbol_table[temp].is_constant = _is_constant;
                 symbol_table[temp].is_class = _is_class;
                 temp = temp - 1;
@@ -109,26 +110,25 @@
         }
         else
         {
-            if(_type == "var")
+            if(_type == "variable")
             {
                 for(int i = 0; i < variable_counter; i++)
                 {
                     if(symbol_table[i].name == _string)
                     {
-                        std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
+                        //std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
                         handle_error();
                         exit(0);
                     }
-
-                    symbol_table[variable_counter].name = _string;
-                    symbol_table[variable_counter].var_info.integer_value = _int_value;
-                    symbol_table[variable_counter].var_info.float_value = _float_value;
-                    symbol_table[variable_counter].var_info.char_value = _char_value;
-                    symbol_table[variable_counter].array_size = _array_size;
-                    symbol_table[variable_counter].var_info.string_value = _string_value;
-                    variable_counter += 1;
-
                 }
+
+            symbol_table[variable_counter].name = _string;
+            symbol_table[variable_counter].var_info.integer_value = _int_value;
+            symbol_table[variable_counter].var_info.float_value = _float_value;
+            symbol_table[variable_counter].var_info.char_value = _char_value;
+            symbol_table[variable_counter].array_size = _array_size;
+            symbol_table[variable_counter].var_info.string_value = _string_value;
+            variable_counter += 1;
             }
         }
     }
@@ -139,6 +139,7 @@
         int i = 0;
         for(i = 0; i < variable_counter; i++)
         {
+            //std::cout << symbol_table[i].name << '\n';
             if(symbol_table[i].name == _s)
             {
                 exists = 1;
@@ -179,12 +180,11 @@
             {
                 if(symbol_table_functions[i].name == _s)
                 {
-                    std::cout << "The line " << yylineno << ": Function " << _s << " is not defined!";
+                    std::cout << "The line " << yylineno << ": Function " << _s << " is already defined!";
                     handle_error();
                     exit(0);
                 }
             }
-
             symbol_table_functions[function_counter].name = _s;
             symbol_table_functions[function_counter].type = _type_p;
             symbol_table_functions[function_counter].is_class = _is_class;
@@ -213,15 +213,18 @@
                     p = strtok(NULL, ",");
                 }
             }
+            function_counter += 1;
         }
     }
 
     void check_fn(std::string _s, std::string _params, int yylineno)
     {
+        //std::cout << "Checking function: " << _s << " --- " << _params;
         bool exists = 0;
         int i;
         for(i = 0; i < function_counter; i++)
         {
+            //std::cout << "Currently at: " << symbol_table_functions[i].name << '\n';
             if(symbol_table_functions[i].name == _s)
             {
                 exists = 1;
@@ -283,6 +286,7 @@
                     handle_error();
                     exit(0);
                 }
+                //std::cout << "VALOARE ESTE: " << symbol_table[i].var_info.integer_value << '\n';
                 return symbol_table[i].var_info.integer_value;
             }
         }
@@ -294,6 +298,7 @@
         {
             if(symbol_table[i].name == _s)
             {
+                //std::cout << symbol_table[i].type << '\n';
                 return symbol_table[i].type;
             }
         }
@@ -311,21 +316,24 @@
 
                 if(type == "chr")
                 {
-
+                    std::cout << "eroare\n";
                 }
                 else
                 if(type == "bool")
                 {
+                    std::cout << "eroare\n";
 
                 }
                 else
                 if(type == "str")
                 {
+                    std::cout << "eroare\n";
 
                 }
                 else 
                 if(type == "i32")
                 {
+                    //std::cout << "TIP: " << get_id(_ast->name, yylineno) << '\n';
                     return get_id(_ast->name, yylineno);
                 }
             }
@@ -333,6 +341,7 @@
             {
                 if(_ast->n_Type == NUMBER)
                 {
+                    //std::cout << "NUMBER: " << atoi(_ast->name.c_str()) << '\n';
                     return atoi(_ast->name.c_str());
                 }
                 return 0;
@@ -343,6 +352,7 @@
             int left_value, right_value;
             left_value = Eval(_ast->left, yylineno);
             right_value = Eval(_ast->right, yylineno);
+
 
             if(_ast->name == "+")
             {
@@ -445,11 +455,11 @@
     {
         for(int i = 0; i < variable_counter; i++)
         {
-            if(symbol_table[i].name == _type)
+            if(symbol_table[i].name == _name)
             {
-                if(symbol_table[i].type == _type)
+                if(symbol_table[i].type != _type)
                 {
-                    //eroare
+                    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << '\n';
                 }
                 if(_type == "i32" || _type == "bool")
                 {
@@ -546,8 +556,8 @@ rest1 : sectiunea2 rest2
 rest2 : sectiunea3 bloc
       ;
 
-sectiunea1 : declaratieVariabila ';'
-           | sectiunea1 declaratieVariabila ';'
+sectiunea1 : declaratievariable ';'
+           | sectiunea1 declaratievariable ';'
            ;
 
 sectiunea2 : declaratieFunctie 
@@ -558,22 +568,22 @@ sectiunea3 : clasa
            | sectiunea3 clasa
            ;
 
-declaratieVariabila : TYPE lista_id { insert_table(0, 0, $1, std::string(std::string("tip")), 0, 0, '\0', std::string(""), 0, yylineno); }
-                    | CONSTANT TYPE lista_id {insert_table(1, 0, $1, std::string("tip"), 0, 0, '\0', std::string(""), 0, yylineno);}
+declaratievariable : TYPE lista_id { insert_table(0, 0, $1, std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno); }
+                    | CONSTANT TYPE lista_id {insert_table(1, 0, $1, std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno);}
                     ;
 
-declaratieVariabilaClasa : TYPE lista_id { insert_table(0, 0, $1, std::string("tip"), 0, 0, '\0', std::string(""), 1, yylineno); }
-                         | CONSTANT TYPE lista_id {insert_table(1, 0, $1, std::string("tip"), 0, 0, '\0', std::string(""), 1, yylineno);}
+declaratievariableClasa : TYPE lista_id { insert_table(0, 0, $1, std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno); }
+                         | CONSTANT TYPE lista_id {insert_table(1, 0, $1, std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno);}
                          ;
 
-declaratieFunctie : TYPE ID '(' lista_param ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("tip"), yylineno, 0, $4);}
-                  | TYPE ID '(' ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("tip"), yylineno, 0, "");}
-                  | TYPE ID '(' lista_param ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($9, yylineno); insert_table_fn($1, $2, std::string("tip"), yylineno, 0, $4);}
-                  | TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($8, yylineno); insert_table_fn($1, $2, std::string("tip"), yylineno, 0, std::string(""));}
+declaratieFunctie : TYPE ID '(' lista_param ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
+                  | TYPE ID '(' ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("type"), yylineno, 0, "");}
+                  | TYPE ID '(' lista_param ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($9, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
+                  | TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($8, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, std::string(""));}
                   ;
 
-declaratieFunctieClasa : TYPE ID '(' lista_param ')' { insert_table_fn($1, $2, std::string("tip"), yylineno, 1, $4);}
-                       | TYPE ID '(' ')' { insert_table_fn($1, $2, std::string("tip"), yylineno, 1, std::string(""));}
+declaratieFunctieClasa : TYPE ID '(' lista_param ')' { insert_table_fn($1, $2, std::string("type"), yylineno, 1, $4);}
+                       | TYPE ID '(' ')' { insert_table_fn($1, $2, std::string("type"), yylineno, 1, std::string(""));}
                        ;
 
 lista_param : param {$$ = $1;} 
@@ -588,8 +598,8 @@ param : TYPE ID {
 clasa : BEGIN_CLASS ID interior_clasa END_CLASS {classs($2);}
       ;
 
-sectiuneaclasa1 : declaratieVariabilaClasa ';'
-                | sectiuneaclasa1 declaratieVariabilaClasa ';'
+sectiuneaclasa1 : declaratievariableClasa ';'
+                | sectiuneaclasa1 declaratievariableClasa ';'
                 ;
 
 sectiuneaclasa2 : declaratieFunctieClasa ';'
@@ -601,18 +611,18 @@ interior_clasa : sectiuneaclasa1 sectiuneaclasa2
                | sectiuneaclasa2
                ;
 
-lista_id : ID {insert_table(0, 0, $1, std::string("variabila"), 0, 0, '\0', std::string(""), 0, yylineno);}
-         | ID '[' NR ']' { insert_table(0, $3, $1, std::string("variabila"), 0, 0, '\0', "", 0, yylineno);}
-         | ID ',' lista_id { insert_table(0, 0, $1, std::string("variabila"), 0, 0, '\0', "", 0, yylineno);}
-         | ID '[' NR ']' ',' lista_id { insert_table(0, $3, $1, std::string("variabila"), 0, 0, '\0', "", 0, yylineno);}
-         | ID ASSIGN e { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variabila"), val, 0, '\0', "", 0, yylineno);}
-         | ID ASSIGN e ',' lista_id { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variabila"), 0, 0, '\0', "", 0, yylineno);}
-         | ID ASSIGN NR_FLOAT { insert_table(0, 0, $1, std::string("variabila"), 0, $3, '\0', "", 0, yylineno);}
-         | ID ASSIGN NR_FLOAT ',' lista_id { insert_table(0, 0, $1, std::string("variabila"), 0, $3, '\0', "", 0, yylineno);}
-         | ID ASSIGN STRING { insert_table(0, 0, $1, std::string("variabila"), 0, 0, '\0', $3, 0, yylineno);}
-         | ID ASSIGN STRING ',' lista_id { insert_table(0, 0, $1, std::string("variabila"), 0, 0, '\0', $3, 0, yylineno);}
-         | ID ASSIGN CHAR { insert_table(0, 0, $1, std::string("variabila"), 0, 0, $3[0], std::string(""), 0, yylineno);}
-         | ID ASSIGN CHAR ',' lista_id { insert_table(0, 0, $1, std::string("variabila"), 0, 0, $3[0], std::string(""), 0, yylineno);}
+lista_id : ID {insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', std::string(""), 0, yylineno);}
+         | ID '[' NR ']' { insert_table(0, $3, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
+         | ID ',' lista_id { insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
+         | ID '[' NR ']' ',' lista_id { insert_table(0, $3, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
+         | ID ASSIGN e { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), val, 0, '\0', "", 0, yylineno);}
+         | ID ASSIGN e ',' lista_id { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
+         | ID ASSIGN NR_FLOAT { insert_table(0, 0, $1, std::string("variable"), 0, $3, '\0', "", 0, yylineno);}
+         | ID ASSIGN NR_FLOAT ',' lista_id { insert_table(0, 0, $1, std::string("variable"), 0, $3, '\0', "", 0, yylineno);}
+         | ID ASSIGN STRING { insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', $3, 0, yylineno);}
+         | ID ASSIGN STRING ',' lista_id { insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', $3, 0, yylineno);}
+         | ID ASSIGN CHAR { insert_table(0, 0, $1, std::string("variable"), 0, 0, $3[0], std::string(""), 0, yylineno);}
+         | ID ASSIGN CHAR ',' lista_id { insert_table(0, 0, $1, std::string("variable"), 0, 0, $3[0], std::string(""), 0, yylineno);}
          ;
       
 /* bloc */
@@ -633,7 +643,7 @@ statement: ID ASSIGN e  {
                             check($1, yylineno, 0);
                             if(strcmp(get_type(std::string($1)).c_str(), "i32"))
                             {
-                                sprintf(error_message, "Linia %d, tip de date diferit", yylineno);
+                                sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                 handle_error();
                                 exit(0);
                             }
@@ -648,7 +658,7 @@ statement: ID ASSIGN e  {
                                 check(std::string(internal_buffer), yylineno, 0);
                                 if(strcmp(strdup(get_type($1).c_str()), "i32"))
                                 {
-                                    sprintf(error_message, "Linia %d, tip de date diferit", yylineno);
+                                    sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                     handle_error();
                                     exit(0);
                                 }
@@ -659,7 +669,7 @@ statement: ID ASSIGN e  {
                                 check($1, yylineno, 0);
                                 if(strcmp(strdup(get_type($1).c_str()), "f32"))
                                 {
-                                    sprintf(error_message, "Linia %d, tip de date diferit", yylineno);
+                                    sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                     handle_error();
                                     exit(0);
                                 }
@@ -731,7 +741,7 @@ e : e '+' e { $$ = AST_Init("+", $1, $3, OPERATOR); }
 pseudo_e : pseudo_e '+' pseudo_e {
                                     if(strcmp($1, $3))
                                     {
-                                        sprintf(error_message, "Linia %d, tip de date diferit!", yylineno);
+                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
                                         handle_error();
                                         exit(0);
                                     }
@@ -740,7 +750,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
          | pseudo_e '-' pseudo_e {
                                     if(strcmp($1, $3))
                                     {
-                                        sprintf(error_message, "Linia %d, tip de date diferit!", yylineno);
+                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
                                         handle_error();
                                         exit(0);
                                     }
@@ -749,7 +759,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
          | pseudo_e '/' pseudo_e {
                                     if(strcmp($1, $3))
                                     {
-                                        sprintf(error_message, "Linia %d, tip de date diferit!", yylineno);
+                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
                                         handle_error();
                                         exit(0);
                                     }
@@ -758,7 +768,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
          | pseudo_e '*' pseudo_e {
                                     if(strcmp($1, $3))
                                     {
-                                        sprintf(error_message, "Linia %d, tip de date diferit!", yylineno);
+                                        sprintf(error_message, "Linia %d, type de date diferit!", yylineno);
                                         handle_error();
                                         exit(0);
                                     }
@@ -802,7 +812,7 @@ lista_apel : e {
                         strcat(internal_buffer, ",");
                         strcat(internal_buffer, type);
                         $$ = internal_buffer;
-                        // printf("%s.\n", tip);
+                        // printf("%s.\n", type);
                 }
            | NR_FLOAT {$$ = "f32";}
            | lista_apel ',' NR_FLOAT { snprintf(internal_buffer,100,"%s,float",$1); $$ = internal_buffer;}

@@ -1,4 +1,4 @@
-clear 
+
 rm -f lex.yy.c
 rm -f y.tab.c
 rm -f p1
