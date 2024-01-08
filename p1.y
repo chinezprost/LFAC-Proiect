@@ -8,14 +8,15 @@
     #include <unistd.h>
     #include <fstream>
 
+    // save buffer
     char internal_buffer[1024];
     int variable_counter = 0;
     int function_counter = 0;
-    int symbol_table_descriptor, symbol_table_function_descriptor;
+
+    // char array to output errors
     char error_message[1024];
 
-    std::string error_string;
-
+    // enum that represents the type of the node
     enum n_type
     {
         OPERATOR = 1,
@@ -25,6 +26,7 @@
         CHR_STR = 5
     };
 
+    // member class that represents the informations of a symbol table
     class informations
     {
     public:
@@ -34,6 +36,7 @@
         int integer_value = 0;
     };
 
+    // class that represents the symbol table
     class symbol_table_class
     {
     public:
@@ -44,10 +47,11 @@
         bool is_constant = 0;
         bool is_class = 0;
         int array_size = 0;
-        int array[100] = {'\0'};
+        int array[256] = {'\0'};
         int elements = 0;
     };
 
+    // class that represents parameters
     class parameters
     {
     public:
@@ -55,6 +59,7 @@
         std::string type;
     };
 
+    // class of symbol table of functions
     class symbol_table_function_class
     {
     public:
@@ -63,16 +68,18 @@
         int argument_count;
         bool is_class;
         std::string ret_id;
-        parameters value[30];
+        parameters value[50];
         std::string parameter_types;
     };
 
-    parameters temp_params[10];
-    symbol_table_class symbol_table[100];
-    symbol_table_function_class symbol_table_functions[100];
+    parameters temp_params[50];
+    symbol_table_class symbol_table[500];
+    symbol_table_function_class symbol_table_functions[500];
 
-    struct AST
+    // the class of the Abstract Syntax Tree
+    class AST
     {
+    public:
         std::string name;
         AST* left;
         AST* right;
@@ -117,7 +124,7 @@
                 {
                     if(symbol_table[i].name == _string)
                     {
-                        //std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
+                        std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
                         handle_error();
                         exit(0);
                     }
@@ -275,7 +282,7 @@
         }
     }
 
-    int get_id(std::string _s, int yylineno)
+    int get_value(std::string _s, int yylineno)
     {
         for(int i = 0; i < variable_counter; i++)
         {
@@ -308,6 +315,7 @@
 
     int Eval(AST* _ast, int yylineno)
     {
+        // If the node is a leaf
         if(_ast->left == nullptr && _ast->right == nullptr)
         {
             if(_ast->n_Type == IDENTIFIER)
@@ -334,8 +342,8 @@
                 else 
                 if(type == "i32")
                 {
-                    //std::cout << "TIP: " << get_id(_ast->name, yylineno) << '\n';
-                    return get_id(_ast->name, yylineno);
+                    //std::cout << "TIP: " << get_value(_ast->name, yylineno) << '\n';
+                    return get_value(_ast->name, yylineno);
                 }
             }
             else
@@ -384,55 +392,6 @@
         }
     }
 
-    std::string TypeOf(AST* _ast, float n_float, bool n_bool, std::string string_string, std::string string_char, int yylineno)
-    {
-        if(_ast == nullptr)
-        {
-            if(n_float != 0)
-            {
-                return std::string("f64");
-            }
-            if(n_bool != 0)
-            {
-                return std::string("bool");
-            }
-            if(string_string != "")
-            {
-                return std::string("str");
-            }
-            if(string_char != "")
-            {
-                return std::string("chr");
-            }
-        }
-        else
-        {
-            if(_ast->left == nullptr && _ast->right == nullptr)
-            {
-                if(_ast->n_Type == IDENTIFIER)
-                {
-                    std::string type = get_type(_ast->name);
-                    if(type == "i32")
-                    {
-                        return std::string("i32");
-                    }
-                    if(type == "bool")
-                    {
-                        return std::string("bool");
-                    }if(type == "f64")
-                    {
-                        return std::string("f64");
-                    }
-                }
-                else
-                {
-                    Eval(_ast, yylineno);
-                    return "i32";
-                }
-            }
-        }
-    }
-
     int get_array_value(std::string _name, int _id, int yylineno)
     {
         for(int i = 0; i < variable_counter; i++)
@@ -460,7 +419,7 @@
             {
                 if(symbol_table[i].type != _type)
                 {
-                    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << '\n';
+                    std::cout << "Undefined error!" << '\n';
                 }
                 if(_type == "i32" || _type == "bool")
                 {
@@ -478,7 +437,6 @@
                 {
                     symbol_table[i].var_info.char_value = _string_value[1];
                 }
-
                 break;
             }
         }
@@ -491,7 +449,7 @@
         return first;
     }
 
-    std::string FnRetType(std::string _fn)
+    std::string fn_get_type(std::string _fn)
     {
         for(int i = 0; i < function_counter; i++)
         {
@@ -560,10 +518,10 @@ extern int yylineno;
     float float_value;
     int int_value;
     char* string_value;
-    AST* tree;
+    struct AST* tree;
 }
 
-%token <string_value> LESS_EQ GREATER_EQ NOT_EQ EQ RETURN BEGIN_FN END_FN
+%token <string_value> LESS_EQ GREATER_EQ NOT_EQ EQ RETURN BEGIN_FN END_FN 
 %token <string_value> AND OR
 %token <string_value> ID
 %token <string_value> STRING
@@ -572,13 +530,13 @@ extern int yylineno;
 %token <string_value> CHAR
 %token <int_value> NR
 %token <float_value> NR_FLOAT
-%type  <string_value> callable_list
-%type  <string_value> operator
-%type  <int_value> condition  
-%type  <string_value> parameter
-%type  <string_value> parameter_list
-%type  <string_value> pseudo_e
-%type <tree> e
+%type  <string_value> CALLABLE_LIST
+%type  <string_value> OPERATOR
+%type  <int_value> CONDITION  
+%type  <string_value> PARAMETER
+%type  <string_value> PARAMETER_LIST
+%type  <string_value> AUX_E
+%type <tree> E
 %start program_structure
 %left OR 
 %left AND
@@ -625,21 +583,21 @@ class_variable_declaration : TYPE id_list { insert_table(0, 0, $1, std::string("
                          | CONSTANT TYPE id_list {insert_table(1, 0, $1, std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno);}
                          ;
 
-function_declaration : TYPE ID '(' parameter_list ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
+function_declaration : TYPE ID '(' PARAMETER_LIST ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
                   | TYPE ID '(' ')' BEGIN_FN list END_FN { insert_table_fn($1, $2, std::string("type"), yylineno, 0, "");}
-                  | TYPE ID '(' parameter_list ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($9, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
-                  | TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN { int val = Eval($8, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, std::string(""));}
+                  | TYPE ID '(' PARAMETER_LIST ')' BEGIN_FN list RETURN E ';' END_FN { int val = Eval($9, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, $4);}
+                  | TYPE ID '(' ')' BEGIN_FN list RETURN E ';' END_FN { int val = Eval($8, yylineno); insert_table_fn($1, $2, std::string("type"), yylineno, 0, std::string(""));}
                   ;
 
-class_fn_declaration : TYPE ID '(' parameter_list ')' { insert_table_fn($1, $2, std::string("type"), yylineno, 1, $4);}
+class_fn_declaration : TYPE ID '(' PARAMETER_LIST ')' { insert_table_fn($1, $2, std::string("type"), yylineno, 1, $4);}
                        | TYPE ID '(' ')' { insert_table_fn($1, $2, std::string("type"), yylineno, 1, std::string(""));}
                        ;
 
-parameter_list : parameter {$$ = $1;} 
-            | parameter ',' parameter_list { $$ = strdup(final($1, $3, std::string(",")).c_str()); }
+PARAMETER_LIST : PARAMETER {$$ = $1;} 
+            | PARAMETER ',' PARAMETER_LIST { $$ = strdup(final($1, $3, std::string(",")).c_str()); }
             ;
             
-parameter : TYPE ID {
+PARAMETER : TYPE ID {
                 $$ = strdup(final($1, $2, std::string(" ")).c_str());
                }
       ; 
@@ -664,8 +622,8 @@ id_list :  ID                                { insert_table(0, 0, $1, std::strin
          | ID '[' NR ']'                     { insert_table(0, $3, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
          | ID ',' id_list                    { insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
          | ID '[' NR ']' ',' id_list         { insert_table(0, $3, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-         | ID ASSIGN e                       { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), val, 0, '\0', "", 0, yylineno);}
-         | ID ASSIGN e ',' id_list           { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
+         | ID ASSIGN E                       { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), val, 0, '\0', "", 0, yylineno);}
+         | ID ASSIGN E ',' id_list           { int val = Eval($3, yylineno); insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
          | ID ASSIGN NR_FLOAT                { insert_table(0, 0, $1, std::string("variable"), 0, $3, '\0', "", 0, yylineno);}
          | ID ASSIGN NR_FLOAT ',' id_list    { insert_table(0, 0, $1, std::string("variable"), 0, $3, '\0', "", 0, yylineno);}
          | ID ASSIGN STRING                  { insert_table(0, 0, $1, std::string("variable"), 0, 0, '\0', $3, 0, yylineno);}
@@ -685,7 +643,7 @@ list : statement ';'
      | list while
      ;
 
-statement: ID ASSIGN e  { 
+statement: ID ASSIGN E  { 
                             check($1, yylineno, 0);
                             if(strcmp(get_type(std::string($1)).c_str(), "i32"))
                             {
@@ -696,10 +654,10 @@ statement: ID ASSIGN e  {
                             int val = Eval($3, yylineno);
                             update_table($1, "i32", val, yylineno, 0, "");
                         }
-         | ID '(' callable_list ')' {check_fn($1, $3, yylineno);}
-         | TYPEOF '(' pseudo_e ')' {printf("%s\n", $3);}
-         | EVAL '(' e ')' {printf("%d\n", Eval($3, yylineno));}
-         | ID '.' ID ASSIGN e { 
+         | ID '(' CALLABLE_LIST ')' {check_fn($1, $3, yylineno);}
+         | TYPEOF '(' AUX_E ')' { std::cout << $3 << std::endl; }
+         | EVAL '(' E ')' { std::cout << Eval($3, yylineno) << std::endl;}
+         | ID '.' ID ASSIGN E { 
                                 snprintf(internal_buffer,100,"%s.%s", $1, $3);
                                 check(std::string(internal_buffer), yylineno, 0);
                                 if(strcmp(strdup(get_type($1).c_str()), "i32"))
@@ -721,22 +679,22 @@ statement: ID ASSIGN e  {
                                 }
                                 update_table($1, "f32", 0, yylineno, $3, "");
                               }
-         | ID '.' ID '(' callable_list ')' {
+         | ID '.' ID '(' CALLABLE_LIST ')' {
                                             snprintf(internal_buffer,100,"%s.%s", $1, $3);
                                             check_fn(internal_buffer, $5, yylineno);
 
                                         }
-         | ID '[' NR ']' ASSIGN e { check($1, yylineno, $3);}
+         | ID '[' NR ']' ASSIGN E { check($1, yylineno, $3);}
          ;
 
-condition : '(' condition ')' {$$ = $2;}
-     | condition AND condition { int rez1=$1; int rez2=$3; 
+CONDITION : '(' CONDITION ')' {$$ = $2;}
+     | CONDITION AND CONDITION { int rez1=$1; int rez2=$3; 
                        $$=(rez1 && rez2);
                      }
-     | condition OR condition { int rez1=$1; int rez2=$3;
+     | CONDITION OR CONDITION { int rez1=$1; int rez2=$3;
                       $$=(rez1 || rez2);
                     }
-     | e operator e { 
+     | E OPERATOR E { 
                 int rez1=Eval($1, yylineno); int rez2=Eval($3, yylineno);
                 if (strcmp($2, "less_equal")) $$=(rez1 <= rez2);
                 if (strcmp($2, "greater_equal")) $$=(rez1 >= rez2);
@@ -747,7 +705,7 @@ condition : '(' condition ')' {$$ = $2;}
                 }
      ; 
 
-operator : LESS_EQ {$$ = $1;}
+OPERATOR : LESS_EQ {$$ = $1;}
     | GREATER_EQ {$$ = $1;}
     | NOT_EQ {$$ = $1;}
     | EQ  {$$ = $1;}
@@ -755,34 +713,34 @@ operator : LESS_EQ {$$ = $1;}
     | '<' {$$ = "<";}
     ;
 
-do : DO list WHILE '(' condition ')' ';'
+do : DO list WHILE '(' CONDITION ')' ';'
    ;
 
-while : WHILE '(' condition ')' list END_WHILE
+while : WHILE '(' CONDITION ')' list END_WHILE
       ;
 
-if : IF '(' condition ')' list END_IF
-   | IF '(' condition ')' list ELSE list END_IF
+if : IF '(' CONDITION ')' list END_IF
+   | IF '(' CONDITION ')' list ELSE list END_IF
    ;
 
-for : FOR '(' TYPE ID ASSIGN e ';' condition ';' statement ')' list END_FOR
-    | FOR '(' ID ASSIGN e ';' condition ';' statement ')' list END_FOR
+for : FOR '(' TYPE ID ASSIGN E ';' CONDITION ';' statement ')' list END_FOR
+    | FOR '(' ID ASSIGN E ';' CONDITION ';' statement ')' list END_FOR
     ;
 
-e : e '+' e                         { $$ = AST_Init("+", $1, $3, OPERATOR); }
-  | e '-' e                         { $$ = AST_Init("-", $1, $3, OPERATOR); }
-  | e '*' e                         { $$ = AST_Init("*", $1, $3, OPERATOR); }
-  | e '/' e                         { $$ = AST_Init("/", $1, $3, OPERATOR); }
-  | '(' e ')'                       { $$ = $2; }
+E : E '+' E                         { $$ = AST_Init("+", $1, $3, OPERATOR); }
+  | E '-' E                         { $$ = AST_Init("-", $1, $3, OPERATOR); }
+  | E '*' E                         { $$ = AST_Init("*", $1, $3, OPERATOR); }
+  | E '/' E                         { $$ = AST_Init("/", $1, $3, OPERATOR); }
+  | '(' E ')'                       { $$ = $2; }
   | ID                              { check($1, yylineno, 0); $$ = AST_Init($1, NULL, NULL, IDENTIFIER);}
   | NR                              { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", $1); $$ = AST_Init(nr, NULL, NULL, NUMBER); }
   | ID '[' NR ']'                   { check($1, yylineno, 1); int val = get_array_value($1, $3, yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); $$ = AST_Init(nr, NULL, NULL, NUMBER); }
-  | ID '(' callable_list ')'           { check_fn($1, $3, yylineno); $$ = AST_Init("0", NULL, NULL, NUMBER); }
+  | ID '(' CALLABLE_LIST ')'           { check_fn($1, $3, yylineno); $$ = AST_Init("0", NULL, NULL, NUMBER); }
   | ID '.' ID                       { snprintf(internal_buffer,100,"%s.%s", $1, $3); check(std::string(internal_buffer), yylineno, 0);  $$ = AST_Init($1, NULL, NULL, IDENTIFIER);}
-  | ID '.' ID '(' callable_list ')'    { snprintf(internal_buffer,100,"%s.%s", $1, $3); check_fn(std::string(internal_buffer), $3, yylineno); $$ = AST_Init("0", NULL, NULL, NUMBER);}
+  | ID '.' ID '(' CALLABLE_LIST ')'    { snprintf(internal_buffer,100,"%s.%s", $1, $3); check_fn(std::string(internal_buffer), $3, yylineno); $$ = AST_Init("0", NULL, NULL, NUMBER);}
   ;
 
-pseudo_e : pseudo_e '+' pseudo_e {
+AUX_E : AUX_E '+' AUX_E {
                                     if(strcmp($1, $3))
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
@@ -791,7 +749,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
                                     }
                                     $$ = $1;
                                  }
-         | pseudo_e '-' pseudo_e {
+         | AUX_E '-' AUX_E {
                                     if(strcmp($1, $3))
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
@@ -800,7 +758,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
                                     }
                                     $$ = $1;
                                  }
-         | pseudo_e '/' pseudo_e {
+         | AUX_E '/' AUX_E {
                                     if(strcmp($1, $3))
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
@@ -809,7 +767,7 @@ pseudo_e : pseudo_e '+' pseudo_e {
                                     }
                                     $$ = $1;
                                  }
-         | pseudo_e '*' pseudo_e {
+         | AUX_E '*' AUX_E {
                                     if(strcmp($1, $3))
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
@@ -818,17 +776,17 @@ pseudo_e : pseudo_e '+' pseudo_e {
                                     }
                                     $$ = $1;
                                  }
-         | '(' pseudo_e ')' { $$ = $2; }
+         | '(' AUX_E ')' { $$ = $2; }
          | ID                                    { check($1, yylineno, 0); $$ = strdup(get_type($1).c_str());}
          | NR                                    { $$ = "i32";}
          | NR_FLOAT                              { $$ = "f32";}
          | ID '[' NR ']'                         { check($1, yylineno, 1); $$ = strdup(get_type($1).c_str());}
-         | ID '(' callable_list ')'                 { check_fn($1, $3, yylineno); $$ = strdup(FnRetType($1).c_str());}
+         | ID '(' CALLABLE_LIST ')'              { check_fn($1, $3, yylineno); $$ = strdup(fn_get_type($1).c_str());}
          | ID '.' ID                             { snprintf(internal_buffer,100,"%s.%s", $1, $3); check($1, yylineno, 1); $$ = strdup(get_type(internal_buffer).c_str());}
-         | ID '.' ID '(' callable_list ')'          { snprintf(internal_buffer,100,"%s.%s", $1, $3); check_fn(internal_buffer, $5, yylineno); $$ = strdup(FnRetType(internal_buffer).c_str());}
+         | ID '.' ID '(' CALLABLE_LIST ')'       { snprintf(internal_buffer,100,"%s.%s", $1, $3); check_fn(internal_buffer, $5, yylineno); $$ = strdup(fn_get_type(internal_buffer).c_str());}
          ;
 
-callable_list : e {
+CALLABLE_LIST : E {
                 struct AST* tree = $1;
                 if(tree->left == NULL && tree->right == NULL)
                 {
@@ -840,7 +798,7 @@ callable_list : e {
                 else
                     $$ = "i32";
             }
-           | callable_list ',' e {
+           | CALLABLE_LIST ',' E {
                     struct AST* tree = $3;
                     char type[20];
                         if(tree->left == NULL && tree->right == NULL)
@@ -859,18 +817,18 @@ callable_list : e {
                         // printf("%s.\n", type);
                 }
            | NR_FLOAT {$$ = "f32";}
-           | callable_list ',' NR_FLOAT { snprintf(internal_buffer,100,"%s,float",$1); $$ = internal_buffer;}
+           | CALLABLE_LIST ',' NR_FLOAT { snprintf(internal_buffer,100,"%s,float",$1); $$ = internal_buffer;}
            | CHAR {$$ = "chr";}
-           | callable_list ',' CHAR {snprintf(internal_buffer,100,"%s,char",$1); $$ = internal_buffer;}
+           | CALLABLE_LIST ',' CHAR {snprintf(internal_buffer,100,"%s,char",$1); $$ = internal_buffer;}
            | STRING {$$ = "str";}
-           | callable_list ',' STRING {snprintf(internal_buffer,100,"%s,string",$1); $$ = internal_buffer;}
+           | CALLABLE_LIST ',' STRING {snprintf(internal_buffer,100,"%s,string",$1); $$ = internal_buffer;}
            ;
 
 %%
 
 void yyerror(char * s)
 {
-    printf("eroare: %s la linia:%d\n",s,yylineno);
+    std::cout << "An error occured:" << s <<" At line:" << yylineno << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -886,4 +844,6 @@ int main(int argc, char** argv)
     
     print_values_to_text_file(fout);
     print_functions_to_text_file(fout2);
+
+    return 0;
 }

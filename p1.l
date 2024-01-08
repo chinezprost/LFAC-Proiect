@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "X.tab.h"
+#include "p1.tab.h"
 %}
 %option noyywrap
 
@@ -12,11 +12,11 @@ NR -?[1-9][0-9]*|0
 FLOAT -?[1-9][0-9]*\.[0-9]+|-?0\.[0-9]+
 
 %%
-"i32" {yylval.strval = strdup(yytext); return TYPE;}
-"f32" {yylval.strval = strdup(yytext); return TYPE;}
-"chr" {yylval.strval = strdup(yytext); return TYPE;}
-"str" {yylval.strval = strdup(yytext); return TYPE;}
-"bool" {yylval.strval = strdup(yytext); return TYPE;}
+"i32" {yylval.string_value = strdup(yytext); return TYPE;}
+"f32" {yylval.string_value = strdup(yytext); return TYPE;}
+"chr" {yylval.string_value = strdup(yytext); return TYPE;}
+"str" {yylval.string_value = strdup(yytext); return TYPE;}
+"bool" {yylval.string_value = strdup(yytext); return TYPE;}
 "less_equal" {return LESS_EQ;}
 "greater_equal" {return GREATER_EQ;}
 "not_equal" {return NOT_EQ;}
@@ -40,12 +40,12 @@ FLOAT -?[1-9][0-9]*\.[0-9]+|-?0\.[0-9]+
 "return" {return RETURN;}
 "Eval" {return EVAL;}
 "TypeOf" {return TYPEOF;}
-{ID} {yylval.strval=strdup(yytext); return ID;}
-{STRING} {yylval.strval = strdup(yytext); yylval.strval++; yylval.strval[strlen(yylval.strval)-1] = 0; return STRING;}
-{CHAR} {yylval.strval = strdup(yytext); yylval.strval++; yylval.strval[strlen(yylval.strval)-1] = 0; return CHAR;}
-"=" {yylval.strval=strdup(yytext);return ASSIGN;}
-{NR} {yylval.intval=atoi(yytext); return NR;}
-{FLOAT}  {yylval.floatval=atof(yytext); return NR_FLOAT;}
+{ID} {yylval.string_value=strdup(yytext); return ID;}
+{STRING} {yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return STRING;}
+{CHAR} {yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return CHAR;}
+"=" {yylval.string_value=strdup(yytext);return ASSIGN;}
+{NR} {yylval.int_value=atoi(yytext); return NR;}
+{FLOAT}  {yylval.float_value=atof(yytext); return NR_FLOAT;}
 [ \t] ;
 \n {yylineno++;}
 . {return yytext[0];}

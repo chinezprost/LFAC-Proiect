@@ -542,7 +542,7 @@ char *yytext;
 #line 2 "p1.l"
 #include <stdio.h>
 #include <stdlib.h>
-#include "X.tab.h"
+#include "p1.tab.h"
 #line 547 "lex.yy.c"
 #line 548 "lex.yy.c"
 
@@ -823,27 +823,27 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 15 "p1.l"
-{yylval.strval = strdup(yytext); return TYPE;}
+{yylval.string_value = strdup(yytext); return TYPE;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 16 "p1.l"
-{yylval.strval = strdup(yytext); return TYPE;}
+{yylval.string_value = strdup(yytext); return TYPE;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 17 "p1.l"
-{yylval.strval = strdup(yytext); return TYPE;}
+{yylval.string_value = strdup(yytext); return TYPE;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 18 "p1.l"
-{yylval.strval = strdup(yytext); return TYPE;}
+{yylval.string_value = strdup(yytext); return TYPE;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 19 "p1.l"
-{yylval.strval = strdup(yytext); return TYPE;}
+{yylval.string_value = strdup(yytext); return TYPE;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
@@ -963,32 +963,32 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 #line 43 "p1.l"
-{yylval.strval=strdup(yytext); return ID;}
+{yylval.string_value=strdup(yytext); return ID;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 44 "p1.l"
-{yylval.strval = strdup(yytext); yylval.strval++; yylval.strval[strlen(yylval.strval)-1] = 0; return STRING;}
+{yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return STRING;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 45 "p1.l"
-{yylval.strval = strdup(yytext); yylval.strval++; yylval.strval[strlen(yylval.strval)-1] = 0; return CHAR;}
+{yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return CHAR;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 46 "p1.l"
-{yylval.strval=strdup(yytext);return ASSIGN;}
+{yylval.string_value=strdup(yytext);return ASSIGN;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 47 "p1.l"
-{yylval.intval=atoi(yytext); return NR;}
+{yylval.int_value=atoi(yytext); return NR;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 48 "p1.l"
-{yylval.floatval=atof(yytext); return NR_FLOAT;}
+{yylval.float_value=atof(yytext); return NR_FLOAT;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP

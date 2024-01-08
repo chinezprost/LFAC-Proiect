@@ -38,6 +38,7 @@ begin_main
     y = 100;
     x = test(test(x1, 3, f) + 2, y+4, f);
     x = test(test(x1,3,f)+2, y+4, f) + (30 - y * arr[2]) - 10;
+
     if(x1 + test(x1, x2, f) greater_equal 5 + x1 and ((x less_equal 2 or x1 less_equal 4 + x2) or x equal 2)) 
         x = 2;
     if_end
@@ -51,6 +52,6 @@ begin_main
     Eval(x1);
     Eval(x2* 10 - 200) ;
     Eval(x+ test(x1,x,f)) ; 	
-    TypeOf(x + 23);
+    TypeOf(23 + x);
     TypeOf(f + 30.0);
 end_main

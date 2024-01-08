@@ -78,14 +78,15 @@
     #include <unistd.h>
     #include <fstream>
 
+    // save buffer
     char internal_buffer[1024];
     int variable_counter = 0;
     int function_counter = 0;
-    int symbol_table_descriptor, symbol_table_function_descriptor;
+
+    // char array to output errors
     char error_message[1024];
 
-    std::string error_string;
-
+    // enum that represents the type of the node
     enum n_type
     {
         OPERATOR = 1,
@@ -95,6 +96,7 @@
         CHR_STR = 5
     };
 
+    // member class that represents the informations of a symbol table
     class informations
     {
     public:
@@ -104,6 +106,7 @@
         int integer_value = 0;
     };
 
+    // class that represents the symbol table
     class symbol_table_class
     {
     public:
@@ -114,10 +117,11 @@
         bool is_constant = 0;
         bool is_class = 0;
         int array_size = 0;
-        int array[100] = {'\0'};
+        int array[256] = {'\0'};
         int elements = 0;
     };
 
+    // class that represents parameters
     class parameters
     {
     public:
@@ -125,6 +129,7 @@
         std::string type;
     };
 
+    // class of symbol table of functions
     class symbol_table_function_class
     {
     public:
@@ -133,16 +138,18 @@
         int argument_count;
         bool is_class;
         std::string ret_id;
-        parameters value[30];
+        parameters value[50];
         std::string parameter_types;
     };
 
-    parameters temp_params[10];
-    symbol_table_class symbol_table[100];
-    symbol_table_function_class symbol_table_functions[100];
+    parameters temp_params[50];
+    symbol_table_class symbol_table[500];
+    symbol_table_function_class symbol_table_functions[500];
 
-    struct AST
+    // the class of the Abstract Syntax Tree
+    class AST
     {
+    public:
         std::string name;
         AST* left;
         AST* right;
@@ -187,7 +194,7 @@
                 {
                     if(symbol_table[i].name == _string)
                     {
-                        //std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
+                        std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
                         handle_error();
                         exit(0);
                     }
@@ -345,7 +352,7 @@
         }
     }
 
-    int get_id(std::string _s, int yylineno)
+    int get_value(std::string _s, int yylineno)
     {
         for(int i = 0; i < variable_counter; i++)
         {
@@ -378,6 +385,7 @@
 
     int Eval(AST* _ast, int yylineno)
     {
+        // If the node is a leaf
         if(_ast->left == nullptr && _ast->right == nullptr)
         {
             if(_ast->n_Type == IDENTIFIER)
@@ -404,8 +412,8 @@
                 else 
                 if(type == "i32")
                 {
-                    //std::cout << "TIP: " << get_id(_ast->name, yylineno) << '\n';
-                    return get_id(_ast->name, yylineno);
+                    //std::cout << "TIP: " << get_value(_ast->name, yylineno) << '\n';
+                    return get_value(_ast->name, yylineno);
                 }
             }
             else
@@ -454,55 +462,6 @@
         }
     }
 
-    std::string TypeOf(AST* _ast, float n_float, bool n_bool, std::string string_string, std::string string_char, int yylineno)
-    {
-        if(_ast == nullptr)
-        {
-            if(n_float != 0)
-            {
-                return std::string("f64");
-            }
-            if(n_bool != 0)
-            {
-                return std::string("bool");
-            }
-            if(string_string != "")
-            {
-                return std::string("str");
-            }
-            if(string_char != "")
-            {
-                return std::string("chr");
-            }
-        }
-        else
-        {
-            if(_ast->left == nullptr && _ast->right == nullptr)
-            {
-                if(_ast->n_Type == IDENTIFIER)
-                {
-                    std::string type = get_type(_ast->name);
-                    if(type == "i32")
-                    {
-                        return std::string("i32");
-                    }
-                    if(type == "bool")
-                    {
-                        return std::string("bool");
-                    }if(type == "f64")
-                    {
-                        return std::string("f64");
-                    }
-                }
-                else
-                {
-                    Eval(_ast, yylineno);
-                    return "i32";
-                }
-            }
-        }
-    }
-
     int get_array_value(std::string _name, int _id, int yylineno)
     {
         for(int i = 0; i < variable_counter; i++)
@@ -530,7 +489,7 @@
             {
                 if(symbol_table[i].type != _type)
                 {
-                    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << '\n';
+                    std::cout << "Undefined error!" << '\n';
                 }
                 if(_type == "i32" || _type == "bool")
                 {
@@ -548,7 +507,6 @@
                 {
                     symbol_table[i].var_info.char_value = _string_value[1];
                 }
-
                 break;
             }
         }
@@ -561,7 +519,7 @@
         return first;
     }
 
-    std::string FnRetType(std::string _fn)
+    std::string fn_get_type(std::string _fn)
     {
         for(int i = 0; i < function_counter; i++)
         {
@@ -626,7 +584,7 @@ void yyerror(char* s);
 extern char* yytext;
 extern int yylineno;
 
-#line 630 "p1.tab.c"
+#line 588 "p1.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -710,8 +668,8 @@ enum yysymbol_kind_t
   YYSYMBOL_class_variable_declaration = 53, /* class_variable_declaration  */
   YYSYMBOL_function_declaration = 54,      /* function_declaration  */
   YYSYMBOL_class_fn_declaration = 55,      /* class_fn_declaration  */
-  YYSYMBOL_parameter_list = 56,            /* parameter_list  */
-  YYSYMBOL_parameter = 57,                 /* parameter  */
+  YYSYMBOL_PARAMETER_LIST = 56,            /* PARAMETER_LIST  */
+  YYSYMBOL_PARAMETER = 57,                 /* PARAMETER  */
   YYSYMBOL_class = 58,                     /* class  */
   YYSYMBOL_class_first_partition = 59,     /* class_first_partition  */
   YYSYMBOL_class_second_partition = 60,    /* class_second_partition  */
@@ -720,15 +678,15 @@ enum yysymbol_kind_t
   YYSYMBOL_bloc = 63,                      /* bloc  */
   YYSYMBOL_list = 64,                      /* list  */
   YYSYMBOL_statement = 65,                 /* statement  */
-  YYSYMBOL_condition = 66,                 /* condition  */
-  YYSYMBOL_operator = 67,                  /* operator  */
+  YYSYMBOL_CONDITION = 66,                 /* CONDITION  */
+  YYSYMBOL_OPERATOR = 67,                  /* OPERATOR  */
   YYSYMBOL_do = 68,                        /* do  */
   YYSYMBOL_while = 69,                     /* while  */
   YYSYMBOL_if = 70,                        /* if  */
   YYSYMBOL_for = 71,                       /* for  */
-  YYSYMBOL_e = 72,                         /* e  */
-  YYSYMBOL_pseudo_e = 73,                  /* pseudo_e  */
-  YYSYMBOL_callable_list = 74              /* callable_list  */
+  YYSYMBOL_E = 72,                         /* E  */
+  YYSYMBOL_AUX_E = 73,                     /* AUX_E  */
+  YYSYMBOL_CALLABLE_LIST = 74              /* CALLABLE_LIST  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -1117,18 +1075,18 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   591,   591,   592,   593,   594,   595,   596,   597,   598,
-     599,   600,   601,   602,   603,   604,   608,   609,   612,   613,
-     616,   617,   620,   621,   624,   625,   628,   629,   630,   631,
-     634,   635,   638,   639,   642,   647,   650,   651,   654,   655,
-     658,   659,   660,   663,   664,   665,   666,   667,   668,   669,
-     670,   671,   672,   673,   674,   677,   680,   681,   682,   683,
-     684,   685,   688,   699,   700,   701,   702,   714,   724,   729,
-     732,   733,   736,   739,   750,   751,   752,   753,   754,   755,
-     758,   761,   764,   765,   768,   769,   772,   773,   774,   775,
-     776,   777,   778,   779,   780,   781,   782,   785,   794,   803,
-     812,   821,   822,   823,   824,   825,   826,   827,   828,   831,
-     843,   861,   862,   863,   864,   865,   866
+       0,   549,   549,   550,   551,   552,   553,   554,   555,   556,
+     557,   558,   559,   560,   561,   562,   566,   567,   570,   571,
+     574,   575,   578,   579,   582,   583,   586,   587,   588,   589,
+     592,   593,   596,   597,   600,   605,   608,   609,   612,   613,
+     616,   617,   618,   621,   622,   623,   624,   625,   626,   627,
+     628,   629,   630,   631,   632,   635,   638,   639,   640,   641,
+     642,   643,   646,   657,   658,   659,   660,   672,   682,   687,
+     690,   691,   694,   697,   708,   709,   710,   711,   712,   713,
+     716,   719,   722,   723,   726,   727,   730,   731,   732,   733,
+     734,   735,   736,   737,   738,   739,   740,   743,   752,   761,
+     770,   779,   780,   781,   782,   783,   784,   785,   786,   789,
+     801,   819,   820,   821,   822,   823,   824
 };
 #endif
 
@@ -1153,10 +1111,10 @@ static const char *const yytname[] =
   "')'", "','", "'['", "']'", "'.'", "$accept", "program_structure",
   "variable_partition", "function_partition", "class_partition",
   "variable_declaration", "class_variable_declaration",
-  "function_declaration", "class_fn_declaration", "parameter_list",
-  "parameter", "class", "class_first_partition", "class_second_partition",
-  "inside_of_class", "id_list", "bloc", "list", "statement", "condition",
-  "operator", "do", "while", "if", "for", "e", "pseudo_e", "callable_list", YY_NULLPTR
+  "function_declaration", "class_fn_declaration", "PARAMETER_LIST",
+  "PARAMETER", "class", "class_first_partition", "class_second_partition",
+  "inside_of_class", "id_list", "bloc", "list", "statement", "CONDITION",
+  "OPERATOR", "do", "while", "if", "for", "E", "AUX_E", "CALLABLE_LIST", YY_NULLPTR
 };
 
 static const char *
@@ -1891,249 +1849,249 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program_structure: variable_partition bloc  */
-#line 591 "p1.y"
+#line 549 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1855 "p1.tab.c"
+    break;
+
+  case 3: /* program_structure: function_partition bloc  */
+#line 550 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1861 "p1.tab.c"
+    break;
+
+  case 4: /* program_structure: class_partition bloc  */
+#line 551 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1867 "p1.tab.c"
+    break;
+
+  case 5: /* program_structure: variable_partition function_partition bloc  */
+#line 552 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1873 "p1.tab.c"
+    break;
+
+  case 6: /* program_structure: function_partition variable_partition bloc  */
+#line 553 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1879 "p1.tab.c"
+    break;
+
+  case 7: /* program_structure: variable_partition class_partition bloc  */
+#line 554 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1885 "p1.tab.c"
+    break;
+
+  case 8: /* program_structure: function_partition class_partition bloc  */
+#line 555 "p1.y"
+                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+#line 1891 "p1.tab.c"
+    break;
+
+  case 9: /* program_structure: class_partition function_partition bloc  */
+#line 556 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1897 "p1.tab.c"
     break;
 
-  case 3: /* program_structure: function_partition bloc  */
-#line 592 "p1.y"
+  case 10: /* program_structure: variable_partition function_partition class_partition bloc  */
+#line 557 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1903 "p1.tab.c"
     break;
 
-  case 4: /* program_structure: class_partition bloc  */
-#line 593 "p1.y"
+  case 11: /* program_structure: variable_partition class_partition function_partition bloc  */
+#line 558 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1909 "p1.tab.c"
     break;
 
-  case 5: /* program_structure: variable_partition function_partition bloc  */
-#line 594 "p1.y"
+  case 12: /* program_structure: function_partition variable_partition class_partition bloc  */
+#line 559 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1915 "p1.tab.c"
     break;
 
-  case 6: /* program_structure: function_partition variable_partition bloc  */
-#line 595 "p1.y"
+  case 13: /* program_structure: function_partition class_partition variable_partition bloc  */
+#line 560 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1921 "p1.tab.c"
     break;
 
-  case 7: /* program_structure: variable_partition class_partition bloc  */
-#line 596 "p1.y"
+  case 14: /* program_structure: class_partition variable_partition function_partition bloc  */
+#line 561 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1927 "p1.tab.c"
     break;
 
-  case 8: /* program_structure: function_partition class_partition bloc  */
-#line 597 "p1.y"
+  case 15: /* program_structure: class_partition function_partition variable_partition bloc  */
+#line 562 "p1.y"
                                                                                 {std::cout << "The program is syntactically correct!" << std::endl;}
 #line 1933 "p1.tab.c"
     break;
 
-  case 9: /* program_structure: class_partition function_partition bloc  */
-#line 598 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 22: /* variable_declaration: TYPE id_list  */
+#line 578 "p1.y"
+                                    { insert_table(0, 0, (yyvsp[-1].string_value), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno); }
 #line 1939 "p1.tab.c"
     break;
 
-  case 10: /* program_structure: variable_partition function_partition class_partition bloc  */
-#line 599 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 23: /* variable_declaration: CONSTANT TYPE id_list  */
+#line 579 "p1.y"
+                                            {insert_table(1, 0, (yyvsp[-2].string_value), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno);}
 #line 1945 "p1.tab.c"
     break;
 
-  case 11: /* program_structure: variable_partition class_partition function_partition bloc  */
-#line 600 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 24: /* class_variable_declaration: TYPE id_list  */
+#line 582 "p1.y"
+                                          { insert_table(0, 0, (yyvsp[-1].string_value), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno); }
 #line 1951 "p1.tab.c"
     break;
 
-  case 12: /* program_structure: function_partition variable_partition class_partition bloc  */
-#line 601 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 25: /* class_variable_declaration: CONSTANT TYPE id_list  */
+#line 583 "p1.y"
+                                                 {insert_table(1, 0, (yyvsp[-2].string_value), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno);}
 #line 1957 "p1.tab.c"
     break;
 
-  case 13: /* program_structure: function_partition class_partition variable_partition bloc  */
-#line 602 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 26: /* function_declaration: TYPE ID '(' PARAMETER_LIST ')' BEGIN_FN list END_FN  */
+#line 586 "p1.y"
+                                                                           { insert_table_fn((yyvsp[-7].string_value), (yyvsp[-6].string_value), std::string("type"), yylineno, 0, (yyvsp[-4].string_value));}
 #line 1963 "p1.tab.c"
     break;
 
-  case 14: /* program_structure: class_partition variable_partition function_partition bloc  */
-#line 603 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 27: /* function_declaration: TYPE ID '(' ')' BEGIN_FN list END_FN  */
+#line 587 "p1.y"
+                                                         { insert_table_fn((yyvsp[-6].string_value), (yyvsp[-5].string_value), std::string("type"), yylineno, 0, "");}
 #line 1969 "p1.tab.c"
     break;
 
-  case 15: /* program_structure: class_partition function_partition variable_partition bloc  */
-#line 604 "p1.y"
-                                                                                {std::cout << "The program is syntactically correct!" << std::endl;}
+  case 28: /* function_declaration: TYPE ID '(' PARAMETER_LIST ')' BEGIN_FN list RETURN E ';' END_FN  */
+#line 588 "p1.y"
+                                                                                     { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-10].string_value), (yyvsp[-9].string_value), std::string("type"), yylineno, 0, (yyvsp[-7].string_value));}
 #line 1975 "p1.tab.c"
     break;
 
-  case 22: /* variable_declaration: TYPE id_list  */
-#line 620 "p1.y"
-                                    { insert_table(0, 0, (yyvsp[-1].string_value), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno); }
+  case 29: /* function_declaration: TYPE ID '(' ')' BEGIN_FN list RETURN E ';' END_FN  */
+#line 589 "p1.y"
+                                                                      { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-9].string_value), (yyvsp[-8].string_value), std::string("type"), yylineno, 0, std::string(""));}
 #line 1981 "p1.tab.c"
     break;
 
-  case 23: /* variable_declaration: CONSTANT TYPE id_list  */
-#line 621 "p1.y"
-                                            {insert_table(1, 0, (yyvsp[-2].string_value), std::string("type"), 0, 0, '\0', std::string(""), 0, yylineno);}
+  case 30: /* class_fn_declaration: TYPE ID '(' PARAMETER_LIST ')'  */
+#line 592 "p1.y"
+                                                      { insert_table_fn((yyvsp[-4].string_value), (yyvsp[-3].string_value), std::string("type"), yylineno, 1, (yyvsp[-1].string_value));}
 #line 1987 "p1.tab.c"
     break;
 
-  case 24: /* class_variable_declaration: TYPE id_list  */
-#line 624 "p1.y"
-                                          { insert_table(0, 0, (yyvsp[-1].string_value), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno); }
+  case 31: /* class_fn_declaration: TYPE ID '(' ')'  */
+#line 593 "p1.y"
+                                         { insert_table_fn((yyvsp[-3].string_value), (yyvsp[-2].string_value), std::string("type"), yylineno, 1, std::string(""));}
 #line 1993 "p1.tab.c"
     break;
 
-  case 25: /* class_variable_declaration: CONSTANT TYPE id_list  */
-#line 625 "p1.y"
-                                                 {insert_table(1, 0, (yyvsp[-2].string_value), std::string("type"), 0, 0, '\0', std::string(""), 1, yylineno);}
+  case 32: /* PARAMETER_LIST: PARAMETER  */
+#line 596 "p1.y"
+                           {(yyval.string_value) = (yyvsp[0].string_value);}
 #line 1999 "p1.tab.c"
     break;
 
-  case 26: /* function_declaration: TYPE ID '(' parameter_list ')' BEGIN_FN list END_FN  */
-#line 628 "p1.y"
-                                                                           { insert_table_fn((yyvsp[-7].string_value), (yyvsp[-6].string_value), std::string("type"), yylineno, 0, (yyvsp[-4].string_value));}
+  case 33: /* PARAMETER_LIST: PARAMETER ',' PARAMETER_LIST  */
+#line 597 "p1.y"
+                                           { (yyval.string_value) = strdup(final((yyvsp[-2].string_value), (yyvsp[0].string_value), std::string(",")).c_str()); }
 #line 2005 "p1.tab.c"
     break;
 
-  case 27: /* function_declaration: TYPE ID '(' ')' BEGIN_FN list END_FN  */
-#line 629 "p1.y"
-                                                         { insert_table_fn((yyvsp[-6].string_value), (yyvsp[-5].string_value), std::string("type"), yylineno, 0, "");}
-#line 2011 "p1.tab.c"
-    break;
-
-  case 28: /* function_declaration: TYPE ID '(' parameter_list ')' BEGIN_FN list RETURN e ';' END_FN  */
-#line 630 "p1.y"
-                                                                                     { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-10].string_value), (yyvsp[-9].string_value), std::string("type"), yylineno, 0, (yyvsp[-7].string_value));}
-#line 2017 "p1.tab.c"
-    break;
-
-  case 29: /* function_declaration: TYPE ID '(' ')' BEGIN_FN list RETURN e ';' END_FN  */
-#line 631 "p1.y"
-                                                                      { int val = Eval((yyvsp[-2].tree), yylineno); insert_table_fn((yyvsp[-9].string_value), (yyvsp[-8].string_value), std::string("type"), yylineno, 0, std::string(""));}
-#line 2023 "p1.tab.c"
-    break;
-
-  case 30: /* class_fn_declaration: TYPE ID '(' parameter_list ')'  */
-#line 634 "p1.y"
-                                                      { insert_table_fn((yyvsp[-4].string_value), (yyvsp[-3].string_value), std::string("type"), yylineno, 1, (yyvsp[-1].string_value));}
-#line 2029 "p1.tab.c"
-    break;
-
-  case 31: /* class_fn_declaration: TYPE ID '(' ')'  */
-#line 635 "p1.y"
-                                         { insert_table_fn((yyvsp[-3].string_value), (yyvsp[-2].string_value), std::string("type"), yylineno, 1, std::string(""));}
-#line 2035 "p1.tab.c"
-    break;
-
-  case 32: /* parameter_list: parameter  */
-#line 638 "p1.y"
-                           {(yyval.string_value) = (yyvsp[0].string_value);}
-#line 2041 "p1.tab.c"
-    break;
-
-  case 33: /* parameter_list: parameter ',' parameter_list  */
-#line 639 "p1.y"
-                                           { (yyval.string_value) = strdup(final((yyvsp[-2].string_value), (yyvsp[0].string_value), std::string(",")).c_str()); }
-#line 2047 "p1.tab.c"
-    break;
-
-  case 34: /* parameter: TYPE ID  */
-#line 642 "p1.y"
+  case 34: /* PARAMETER: TYPE ID  */
+#line 600 "p1.y"
                     {
                 (yyval.string_value) = strdup(final((yyvsp[-1].string_value), (yyvsp[0].string_value), std::string(" ")).c_str());
                }
-#line 2055 "p1.tab.c"
+#line 2013 "p1.tab.c"
     break;
 
   case 35: /* class: BEGIN_CLASS ID inside_of_class END_CLASS  */
-#line 647 "p1.y"
+#line 605 "p1.y"
                                                  {classs((yyvsp[-2].string_value));}
-#line 2061 "p1.tab.c"
+#line 2019 "p1.tab.c"
     break;
 
   case 43: /* id_list: ID  */
-#line 663 "p1.y"
+#line 621 "p1.y"
                                              { insert_table(0, 0, (yyvsp[0].string_value), std::string("variable"), 0, 0, '\0', std::string(""), 0, yylineno);}
-#line 2067 "p1.tab.c"
+#line 2025 "p1.tab.c"
     break;
 
   case 44: /* id_list: ID '[' NR ']'  */
-#line 664 "p1.y"
+#line 622 "p1.y"
                                              { insert_table(0, (yyvsp[-1].int_value), (yyvsp[-3].string_value), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 2073 "p1.tab.c"
+#line 2031 "p1.tab.c"
     break;
 
   case 45: /* id_list: ID ',' id_list  */
-#line 665 "p1.y"
+#line 623 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-2].string_value), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 2079 "p1.tab.c"
+#line 2037 "p1.tab.c"
     break;
 
   case 46: /* id_list: ID '[' NR ']' ',' id_list  */
-#line 666 "p1.y"
+#line 624 "p1.y"
                                              { insert_table(0, (yyvsp[-3].int_value), (yyvsp[-5].string_value), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 2085 "p1.tab.c"
+#line 2043 "p1.tab.c"
     break;
 
-  case 47: /* id_list: ID ASSIGN e  */
-#line 667 "p1.y"
+  case 47: /* id_list: ID ASSIGN E  */
+#line 625 "p1.y"
                                              { int val = Eval((yyvsp[0].tree), yylineno); insert_table(0, 0, (yyvsp[-2].string_value), std::string("variable"), val, 0, '\0', "", 0, yylineno);}
-#line 2091 "p1.tab.c"
+#line 2049 "p1.tab.c"
     break;
 
-  case 48: /* id_list: ID ASSIGN e ',' id_list  */
-#line 668 "p1.y"
+  case 48: /* id_list: ID ASSIGN E ',' id_list  */
+#line 626 "p1.y"
                                              { int val = Eval((yyvsp[-2].tree), yylineno); insert_table(0, 0, (yyvsp[-4].string_value), std::string("variable"), 0, 0, '\0', "", 0, yylineno);}
-#line 2097 "p1.tab.c"
+#line 2055 "p1.tab.c"
     break;
 
   case 49: /* id_list: ID ASSIGN NR_FLOAT  */
-#line 669 "p1.y"
+#line 627 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-2].string_value), std::string("variable"), 0, (yyvsp[0].float_value), '\0', "", 0, yylineno);}
-#line 2103 "p1.tab.c"
+#line 2061 "p1.tab.c"
     break;
 
   case 50: /* id_list: ID ASSIGN NR_FLOAT ',' id_list  */
-#line 670 "p1.y"
+#line 628 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-4].string_value), std::string("variable"), 0, (yyvsp[-2].float_value), '\0', "", 0, yylineno);}
-#line 2109 "p1.tab.c"
+#line 2067 "p1.tab.c"
     break;
 
   case 51: /* id_list: ID ASSIGN STRING  */
-#line 671 "p1.y"
+#line 629 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-2].string_value), std::string("variable"), 0, 0, '\0', (yyvsp[0].string_value), 0, yylineno);}
-#line 2115 "p1.tab.c"
+#line 2073 "p1.tab.c"
     break;
 
   case 52: /* id_list: ID ASSIGN STRING ',' id_list  */
-#line 672 "p1.y"
+#line 630 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-4].string_value), std::string("variable"), 0, 0, '\0', (yyvsp[-2].string_value), 0, yylineno);}
-#line 2121 "p1.tab.c"
+#line 2079 "p1.tab.c"
     break;
 
   case 53: /* id_list: ID ASSIGN CHAR  */
-#line 673 "p1.y"
+#line 631 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-2].string_value), std::string("variable"), 0, 0, (yyvsp[0].string_value)[0], std::string(""), 0, yylineno);}
-#line 2127 "p1.tab.c"
+#line 2085 "p1.tab.c"
     break;
 
   case 54: /* id_list: ID ASSIGN CHAR ',' id_list  */
-#line 674 "p1.y"
+#line 632 "p1.y"
                                              { insert_table(0, 0, (yyvsp[-4].string_value), std::string("variable"), 0, 0, (yyvsp[-2].string_value)[0], std::string(""), 0, yylineno);}
-#line 2133 "p1.tab.c"
+#line 2091 "p1.tab.c"
     break;
 
-  case 62: /* statement: ID ASSIGN e  */
-#line 688 "p1.y"
+  case 62: /* statement: ID ASSIGN E  */
+#line 646 "p1.y"
                         { 
                             check((yyvsp[-2].string_value), yylineno, 0);
                             if(strcmp(get_type(std::string((yyvsp[-2].string_value))).c_str(), "i32"))
@@ -2145,29 +2103,29 @@ yyreduce:
                             int val = Eval((yyvsp[0].tree), yylineno);
                             update_table((yyvsp[-2].string_value), "i32", val, yylineno, 0, "");
                         }
-#line 2149 "p1.tab.c"
+#line 2107 "p1.tab.c"
     break;
 
-  case 63: /* statement: ID '(' callable_list ')'  */
-#line 699 "p1.y"
+  case 63: /* statement: ID '(' CALLABLE_LIST ')'  */
+#line 657 "p1.y"
                                     {check_fn((yyvsp[-3].string_value), (yyvsp[-1].string_value), yylineno);}
-#line 2155 "p1.tab.c"
+#line 2113 "p1.tab.c"
     break;
 
-  case 64: /* statement: TYPEOF '(' pseudo_e ')'  */
-#line 700 "p1.y"
-                                   {printf("%s\n", (yyvsp[-1].string_value));}
-#line 2161 "p1.tab.c"
+  case 64: /* statement: TYPEOF '(' AUX_E ')'  */
+#line 658 "p1.y"
+                                { std::cout << (yyvsp[-1].string_value) << std::endl; }
+#line 2119 "p1.tab.c"
     break;
 
-  case 65: /* statement: EVAL '(' e ')'  */
-#line 701 "p1.y"
-                          {printf("%d\n", Eval((yyvsp[-1].tree), yylineno));}
-#line 2167 "p1.tab.c"
+  case 65: /* statement: EVAL '(' E ')'  */
+#line 659 "p1.y"
+                          { std::cout << Eval((yyvsp[-1].tree), yylineno) << std::endl;}
+#line 2125 "p1.tab.c"
     break;
 
-  case 66: /* statement: ID '.' ID ASSIGN e  */
-#line 702 "p1.y"
+  case 66: /* statement: ID '.' ID ASSIGN E  */
+#line 660 "p1.y"
                               { 
                                 snprintf(internal_buffer,100,"%s.%s", (yyvsp[-4].string_value), (yyvsp[-2].string_value));
                                 check(std::string(internal_buffer), yylineno, 0);
@@ -2180,11 +2138,11 @@ yyreduce:
                                 int val = Eval((yyvsp[0].tree), yylineno);
                                 update_table(std::string(internal_buffer), "i32", val, yylineno, 0, "");
                               }
-#line 2184 "p1.tab.c"
+#line 2142 "p1.tab.c"
     break;
 
   case 67: /* statement: ID ASSIGN NR_FLOAT  */
-#line 714 "p1.y"
+#line 672 "p1.y"
                               {
                                 check((yyvsp[-2].string_value), yylineno, 0);
                                 if(strcmp(strdup(get_type((yyvsp[-2].string_value)).c_str()), "f32"))
@@ -2195,49 +2153,49 @@ yyreduce:
                                 }
                                 update_table((yyvsp[-2].string_value), "f32", 0, yylineno, (yyvsp[0].float_value), "");
                               }
-#line 2199 "p1.tab.c"
+#line 2157 "p1.tab.c"
     break;
 
-  case 68: /* statement: ID '.' ID '(' callable_list ')'  */
-#line 724 "p1.y"
+  case 68: /* statement: ID '.' ID '(' CALLABLE_LIST ')'  */
+#line 682 "p1.y"
                                            {
                                             snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].string_value), (yyvsp[-3].string_value));
                                             check_fn(internal_buffer, (yyvsp[-1].string_value), yylineno);
 
                                         }
-#line 2209 "p1.tab.c"
+#line 2167 "p1.tab.c"
     break;
 
-  case 69: /* statement: ID '[' NR ']' ASSIGN e  */
-#line 729 "p1.y"
+  case 69: /* statement: ID '[' NR ']' ASSIGN E  */
+#line 687 "p1.y"
                                   { check((yyvsp[-5].string_value), yylineno, (yyvsp[-3].int_value));}
-#line 2215 "p1.tab.c"
+#line 2173 "p1.tab.c"
     break;
 
-  case 70: /* condition: '(' condition ')'  */
-#line 732 "p1.y"
+  case 70: /* CONDITION: '(' CONDITION ')'  */
+#line 690 "p1.y"
                               {(yyval.int_value) = (yyvsp[-1].int_value);}
-#line 2221 "p1.tab.c"
+#line 2179 "p1.tab.c"
     break;
 
-  case 71: /* condition: condition AND condition  */
-#line 733 "p1.y"
+  case 71: /* CONDITION: CONDITION AND CONDITION  */
+#line 691 "p1.y"
                                { int rez1=(yyvsp[-2].int_value); int rez2=(yyvsp[0].int_value); 
                        (yyval.int_value)=(rez1 && rez2);
                      }
-#line 2229 "p1.tab.c"
+#line 2187 "p1.tab.c"
     break;
 
-  case 72: /* condition: condition OR condition  */
-#line 736 "p1.y"
+  case 72: /* CONDITION: CONDITION OR CONDITION  */
+#line 694 "p1.y"
                               { int rez1=(yyvsp[-2].int_value); int rez2=(yyvsp[0].int_value);
                       (yyval.int_value)=(rez1 || rez2);
                     }
-#line 2237 "p1.tab.c"
+#line 2195 "p1.tab.c"
     break;
 
-  case 73: /* condition: e operator e  */
-#line 739 "p1.y"
+  case 73: /* CONDITION: E OPERATOR E  */
+#line 697 "p1.y"
                     { 
                 int rez1=Eval((yyvsp[-2].tree), yylineno); int rez2=Eval((yyvsp[0].tree), yylineno);
                 if (strcmp((yyvsp[-1].string_value), "less_equal")) (yyval.int_value)=(rez1 <= rez2);
@@ -2247,114 +2205,156 @@ yyreduce:
                 if (strcmp((yyvsp[-1].string_value), ">")) (yyval.int_value)=(rez1 > rez2);
                 if (strcmp((yyvsp[-1].string_value), "<")) (yyval.int_value)=(rez1 < rez2);
                 }
+#line 2209 "p1.tab.c"
+    break;
+
+  case 74: /* OPERATOR: LESS_EQ  */
+#line 708 "p1.y"
+                   {(yyval.string_value) = (yyvsp[0].string_value);}
+#line 2215 "p1.tab.c"
+    break;
+
+  case 75: /* OPERATOR: GREATER_EQ  */
+#line 709 "p1.y"
+                 {(yyval.string_value) = (yyvsp[0].string_value);}
+#line 2221 "p1.tab.c"
+    break;
+
+  case 76: /* OPERATOR: NOT_EQ  */
+#line 710 "p1.y"
+             {(yyval.string_value) = (yyvsp[0].string_value);}
+#line 2227 "p1.tab.c"
+    break;
+
+  case 77: /* OPERATOR: EQ  */
+#line 711 "p1.y"
+          {(yyval.string_value) = (yyvsp[0].string_value);}
+#line 2233 "p1.tab.c"
+    break;
+
+  case 78: /* OPERATOR: '>'  */
+#line 712 "p1.y"
+          {(yyval.string_value) = ">";}
+#line 2239 "p1.tab.c"
+    break;
+
+  case 79: /* OPERATOR: '<'  */
+#line 713 "p1.y"
+          {(yyval.string_value) = "<";}
+#line 2245 "p1.tab.c"
+    break;
+
+  case 86: /* E: E '+' E  */
+#line 730 "p1.y"
+                                    { (yyval.tree) = AST_Init("+", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
 #line 2251 "p1.tab.c"
     break;
 
-  case 74: /* operator: LESS_EQ  */
-#line 750 "p1.y"
-                   {(yyval.string_value) = (yyvsp[0].string_value);}
+  case 87: /* E: E '-' E  */
+#line 731 "p1.y"
+                                    { (yyval.tree) = AST_Init("-", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
 #line 2257 "p1.tab.c"
     break;
 
-  case 75: /* operator: GREATER_EQ  */
-#line 751 "p1.y"
-                 {(yyval.string_value) = (yyvsp[0].string_value);}
+  case 88: /* E: E '*' E  */
+#line 732 "p1.y"
+                                    { (yyval.tree) = AST_Init("*", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
 #line 2263 "p1.tab.c"
     break;
 
-  case 76: /* operator: NOT_EQ  */
-#line 752 "p1.y"
-             {(yyval.string_value) = (yyvsp[0].string_value);}
+  case 89: /* E: E '/' E  */
+#line 733 "p1.y"
+                                    { (yyval.tree) = AST_Init("/", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
 #line 2269 "p1.tab.c"
     break;
 
-  case 77: /* operator: EQ  */
-#line 753 "p1.y"
-          {(yyval.string_value) = (yyvsp[0].string_value);}
+  case 90: /* E: '(' E ')'  */
+#line 734 "p1.y"
+                                    { (yyval.tree) = (yyvsp[-1].tree); }
 #line 2275 "p1.tab.c"
     break;
 
-  case 78: /* operator: '>'  */
-#line 754 "p1.y"
-          {(yyval.string_value) = ">";}
+  case 91: /* E: ID  */
+#line 735 "p1.y"
+                                    { check((yyvsp[0].string_value), yylineno, 0); (yyval.tree) = AST_Init((yyvsp[0].string_value), NULL, NULL, IDENTIFIER);}
 #line 2281 "p1.tab.c"
     break;
 
-  case 79: /* operator: '<'  */
-#line 755 "p1.y"
-          {(yyval.string_value) = "<";}
+  case 92: /* E: NR  */
+#line 736 "p1.y"
+                                    { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", (yyvsp[0].int_value)); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
 #line 2287 "p1.tab.c"
     break;
 
-  case 86: /* e: e '+' e  */
-#line 772 "p1.y"
-                                    { (yyval.tree) = AST_Init("+", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+  case 93: /* E: ID '[' NR ']'  */
+#line 737 "p1.y"
+                                    { check((yyvsp[-3].string_value), yylineno, 1); int val = get_array_value((yyvsp[-3].string_value), (yyvsp[-1].int_value), yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
 #line 2293 "p1.tab.c"
     break;
 
-  case 87: /* e: e '-' e  */
-#line 773 "p1.y"
-                                    { (yyval.tree) = AST_Init("-", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+  case 94: /* E: ID '(' CALLABLE_LIST ')'  */
+#line 738 "p1.y"
+                                       { check_fn((yyvsp[-3].string_value), (yyvsp[-1].string_value), yylineno); (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER); }
 #line 2299 "p1.tab.c"
     break;
 
-  case 88: /* e: e '*' e  */
-#line 774 "p1.y"
-                                    { (yyval.tree) = AST_Init("*", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+  case 95: /* E: ID '.' ID  */
+#line 739 "p1.y"
+                                    { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].string_value), (yyvsp[0].string_value)); check(std::string(internal_buffer), yylineno, 0);  (yyval.tree) = AST_Init((yyvsp[-2].string_value), NULL, NULL, IDENTIFIER);}
 #line 2305 "p1.tab.c"
     break;
 
-  case 89: /* e: e '/' e  */
-#line 775 "p1.y"
-                                    { (yyval.tree) = AST_Init("/", (yyvsp[-2].tree), (yyvsp[0].tree), OPERATOR); }
+  case 96: /* E: ID '.' ID '(' CALLABLE_LIST ')'  */
+#line 740 "p1.y"
+                                       { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].string_value), (yyvsp[-3].string_value)); check_fn(std::string(internal_buffer), (yyvsp[-3].string_value), yylineno); (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER);}
 #line 2311 "p1.tab.c"
     break;
 
-  case 90: /* e: '(' e ')'  */
-#line 776 "p1.y"
-                                    { (yyval.tree) = (yyvsp[-1].tree); }
-#line 2317 "p1.tab.c"
+  case 97: /* AUX_E: AUX_E '+' AUX_E  */
+#line 743 "p1.y"
+                        {
+                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
+                                    {
+                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
+                                        handle_error();
+                                        exit(0);
+                                    }
+                                    (yyval.string_value) = (yyvsp[-2].string_value);
+                                 }
+#line 2325 "p1.tab.c"
     break;
 
-  case 91: /* e: ID  */
-#line 777 "p1.y"
-                                    { check((yyvsp[0].string_value), yylineno, 0); (yyval.tree) = AST_Init((yyvsp[0].string_value), NULL, NULL, IDENTIFIER);}
-#line 2323 "p1.tab.c"
+  case 98: /* AUX_E: AUX_E '-' AUX_E  */
+#line 752 "p1.y"
+                           {
+                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
+                                    {
+                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
+                                        handle_error();
+                                        exit(0);
+                                    }
+                                    (yyval.string_value) = (yyvsp[-2].string_value);
+                                 }
+#line 2339 "p1.tab.c"
     break;
 
-  case 92: /* e: NR  */
-#line 778 "p1.y"
-                                    { char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", (yyvsp[0].int_value)); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
-#line 2329 "p1.tab.c"
-    break;
-
-  case 93: /* e: ID '[' NR ']'  */
-#line 779 "p1.y"
-                                    { check((yyvsp[-3].string_value), yylineno, 1); int val = get_array_value((yyvsp[-3].string_value), (yyvsp[-1].int_value), yylineno); char nr[100]; bzero(&nr, 100); sprintf(nr, "%d", val); (yyval.tree) = AST_Init(nr, NULL, NULL, NUMBER); }
-#line 2335 "p1.tab.c"
-    break;
-
-  case 94: /* e: ID '(' callable_list ')'  */
-#line 780 "p1.y"
-                                       { check_fn((yyvsp[-3].string_value), (yyvsp[-1].string_value), yylineno); (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER); }
-#line 2341 "p1.tab.c"
-    break;
-
-  case 95: /* e: ID '.' ID  */
-#line 781 "p1.y"
-                                    { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].string_value), (yyvsp[0].string_value)); check(std::string(internal_buffer), yylineno, 0);  (yyval.tree) = AST_Init((yyvsp[-2].string_value), NULL, NULL, IDENTIFIER);}
-#line 2347 "p1.tab.c"
-    break;
-
-  case 96: /* e: ID '.' ID '(' callable_list ')'  */
-#line 782 "p1.y"
-                                       { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].string_value), (yyvsp[-3].string_value)); check_fn(std::string(internal_buffer), (yyvsp[-3].string_value), yylineno); (yyval.tree) = AST_Init("0", NULL, NULL, NUMBER);}
+  case 99: /* AUX_E: AUX_E '/' AUX_E  */
+#line 761 "p1.y"
+                           {
+                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
+                                    {
+                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
+                                        handle_error();
+                                        exit(0);
+                                    }
+                                    (yyval.string_value) = (yyvsp[-2].string_value);
+                                 }
 #line 2353 "p1.tab.c"
     break;
 
-  case 97: /* pseudo_e: pseudo_e '+' pseudo_e  */
-#line 785 "p1.y"
-                                 {
+  case 100: /* AUX_E: AUX_E '*' AUX_E  */
+#line 770 "p1.y"
+                           {
                                     if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
@@ -2366,98 +2366,56 @@ yyreduce:
 #line 2367 "p1.tab.c"
     break;
 
-  case 98: /* pseudo_e: pseudo_e '-' pseudo_e  */
-#line 794 "p1.y"
-                                 {
-                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
-                                    {
-                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
-                                        handle_error();
-                                        exit(0);
-                                    }
-                                    (yyval.string_value) = (yyvsp[-2].string_value);
-                                 }
-#line 2381 "p1.tab.c"
+  case 101: /* AUX_E: '(' AUX_E ')'  */
+#line 779 "p1.y"
+                         { (yyval.string_value) = (yyvsp[-1].string_value); }
+#line 2373 "p1.tab.c"
     break;
 
-  case 99: /* pseudo_e: pseudo_e '/' pseudo_e  */
-#line 803 "p1.y"
-                                 {
-                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
-                                    {
-                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
-                                        handle_error();
-                                        exit(0);
-                                    }
-                                    (yyval.string_value) = (yyvsp[-2].string_value);
-                                 }
-#line 2395 "p1.tab.c"
+  case 102: /* AUX_E: ID  */
+#line 780 "p1.y"
+                                                 { check((yyvsp[0].string_value), yylineno, 0); (yyval.string_value) = strdup(get_type((yyvsp[0].string_value)).c_str());}
+#line 2379 "p1.tab.c"
     break;
 
-  case 100: /* pseudo_e: pseudo_e '*' pseudo_e  */
-#line 812 "p1.y"
-                                 {
-                                    if(strcmp((yyvsp[-2].string_value), (yyvsp[0].string_value)))
-                                    {
-                                        sprintf(error_message, "At line: %d, data types are different!", yylineno);
-                                        handle_error();
-                                        exit(0);
-                                    }
-                                    (yyval.string_value) = (yyvsp[-2].string_value);
-                                 }
+  case 103: /* AUX_E: NR  */
+#line 781 "p1.y"
+                                                 { (yyval.string_value) = "i32";}
+#line 2385 "p1.tab.c"
+    break;
+
+  case 104: /* AUX_E: NR_FLOAT  */
+#line 782 "p1.y"
+                                                 { (yyval.string_value) = "f32";}
+#line 2391 "p1.tab.c"
+    break;
+
+  case 105: /* AUX_E: ID '[' NR ']'  */
+#line 783 "p1.y"
+                                                 { check((yyvsp[-3].string_value), yylineno, 1); (yyval.string_value) = strdup(get_type((yyvsp[-3].string_value)).c_str());}
+#line 2397 "p1.tab.c"
+    break;
+
+  case 106: /* AUX_E: ID '(' CALLABLE_LIST ')'  */
+#line 784 "p1.y"
+                                                 { check_fn((yyvsp[-3].string_value), (yyvsp[-1].string_value), yylineno); (yyval.string_value) = strdup(fn_get_type((yyvsp[-3].string_value)).c_str());}
+#line 2403 "p1.tab.c"
+    break;
+
+  case 107: /* AUX_E: ID '.' ID  */
+#line 785 "p1.y"
+                                                 { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].string_value), (yyvsp[0].string_value)); check((yyvsp[-2].string_value), yylineno, 1); (yyval.string_value) = strdup(get_type(internal_buffer).c_str());}
 #line 2409 "p1.tab.c"
     break;
 
-  case 101: /* pseudo_e: '(' pseudo_e ')'  */
-#line 821 "p1.y"
-                            { (yyval.string_value) = (yyvsp[-1].string_value); }
+  case 108: /* AUX_E: ID '.' ID '(' CALLABLE_LIST ')'  */
+#line 786 "p1.y"
+                                                 { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].string_value), (yyvsp[-3].string_value)); check_fn(internal_buffer, (yyvsp[-1].string_value), yylineno); (yyval.string_value) = strdup(fn_get_type(internal_buffer).c_str());}
 #line 2415 "p1.tab.c"
     break;
 
-  case 102: /* pseudo_e: ID  */
-#line 822 "p1.y"
-                                                 { check((yyvsp[0].string_value), yylineno, 0); (yyval.string_value) = strdup(get_type((yyvsp[0].string_value)).c_str());}
-#line 2421 "p1.tab.c"
-    break;
-
-  case 103: /* pseudo_e: NR  */
-#line 823 "p1.y"
-                                                 { (yyval.string_value) = "i32";}
-#line 2427 "p1.tab.c"
-    break;
-
-  case 104: /* pseudo_e: NR_FLOAT  */
-#line 824 "p1.y"
-                                                 { (yyval.string_value) = "f32";}
-#line 2433 "p1.tab.c"
-    break;
-
-  case 105: /* pseudo_e: ID '[' NR ']'  */
-#line 825 "p1.y"
-                                                 { check((yyvsp[-3].string_value), yylineno, 1); (yyval.string_value) = strdup(get_type((yyvsp[-3].string_value)).c_str());}
-#line 2439 "p1.tab.c"
-    break;
-
-  case 106: /* pseudo_e: ID '(' callable_list ')'  */
-#line 826 "p1.y"
-                                                    { check_fn((yyvsp[-3].string_value), (yyvsp[-1].string_value), yylineno); (yyval.string_value) = strdup(FnRetType((yyvsp[-3].string_value)).c_str());}
-#line 2445 "p1.tab.c"
-    break;
-
-  case 107: /* pseudo_e: ID '.' ID  */
-#line 827 "p1.y"
-                                                 { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-2].string_value), (yyvsp[0].string_value)); check((yyvsp[-2].string_value), yylineno, 1); (yyval.string_value) = strdup(get_type(internal_buffer).c_str());}
-#line 2451 "p1.tab.c"
-    break;
-
-  case 108: /* pseudo_e: ID '.' ID '(' callable_list ')'  */
-#line 828 "p1.y"
-                                                    { snprintf(internal_buffer,100,"%s.%s", (yyvsp[-5].string_value), (yyvsp[-3].string_value)); check_fn(internal_buffer, (yyvsp[-1].string_value), yylineno); (yyval.string_value) = strdup(FnRetType(internal_buffer).c_str());}
-#line 2457 "p1.tab.c"
-    break;
-
-  case 109: /* callable_list: e  */
-#line 831 "p1.y"
+  case 109: /* CALLABLE_LIST: E  */
+#line 789 "p1.y"
                   {
                 struct AST* tree = (yyvsp[0].tree);
                 if(tree->left == NULL && tree->right == NULL)
@@ -2470,11 +2428,11 @@ yyreduce:
                 else
                     (yyval.string_value) = "i32";
             }
-#line 2474 "p1.tab.c"
+#line 2432 "p1.tab.c"
     break;
 
-  case 110: /* callable_list: callable_list ',' e  */
-#line 843 "p1.y"
+  case 110: /* CALLABLE_LIST: CALLABLE_LIST ',' E  */
+#line 801 "p1.y"
                                  {
                     struct AST* tree = (yyvsp[0].tree);
                     char type[20];
@@ -2493,47 +2451,47 @@ yyreduce:
                         (yyval.string_value) = internal_buffer;
                         // printf("%s.\n", type);
                 }
-#line 2497 "p1.tab.c"
+#line 2455 "p1.tab.c"
     break;
 
-  case 111: /* callable_list: NR_FLOAT  */
-#line 861 "p1.y"
+  case 111: /* CALLABLE_LIST: NR_FLOAT  */
+#line 819 "p1.y"
                       {(yyval.string_value) = "f32";}
-#line 2503 "p1.tab.c"
+#line 2461 "p1.tab.c"
     break;
 
-  case 112: /* callable_list: callable_list ',' NR_FLOAT  */
-#line 862 "p1.y"
+  case 112: /* CALLABLE_LIST: CALLABLE_LIST ',' NR_FLOAT  */
+#line 820 "p1.y"
                                         { snprintf(internal_buffer,100,"%s,float",(yyvsp[-2].string_value)); (yyval.string_value) = internal_buffer;}
-#line 2509 "p1.tab.c"
+#line 2467 "p1.tab.c"
     break;
 
-  case 113: /* callable_list: CHAR  */
-#line 863 "p1.y"
+  case 113: /* CALLABLE_LIST: CHAR  */
+#line 821 "p1.y"
                   {(yyval.string_value) = "chr";}
-#line 2515 "p1.tab.c"
+#line 2473 "p1.tab.c"
     break;
 
-  case 114: /* callable_list: callable_list ',' CHAR  */
-#line 864 "p1.y"
+  case 114: /* CALLABLE_LIST: CALLABLE_LIST ',' CHAR  */
+#line 822 "p1.y"
                                     {snprintf(internal_buffer,100,"%s,char",(yyvsp[-2].string_value)); (yyval.string_value) = internal_buffer;}
-#line 2521 "p1.tab.c"
+#line 2479 "p1.tab.c"
     break;
 
-  case 115: /* callable_list: STRING  */
-#line 865 "p1.y"
+  case 115: /* CALLABLE_LIST: STRING  */
+#line 823 "p1.y"
                     {(yyval.string_value) = "str";}
-#line 2527 "p1.tab.c"
+#line 2485 "p1.tab.c"
     break;
 
-  case 116: /* callable_list: callable_list ',' STRING  */
-#line 866 "p1.y"
+  case 116: /* CALLABLE_LIST: CALLABLE_LIST ',' STRING  */
+#line 824 "p1.y"
                                       {snprintf(internal_buffer,100,"%s,string",(yyvsp[-2].string_value)); (yyval.string_value) = internal_buffer;}
-#line 2533 "p1.tab.c"
+#line 2491 "p1.tab.c"
     break;
 
 
-#line 2537 "p1.tab.c"
+#line 2495 "p1.tab.c"
 
       default: break;
     }
@@ -2726,12 +2684,12 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 869 "p1.y"
+#line 827 "p1.y"
 
 
 void yyerror(char * s)
 {
-    printf("eroare: %s la linia:%d\n",s,yylineno);
+    std::cout << "An error occured:" << s <<" At line:" << yylineno << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -2747,4 +2705,6 @@ int main(int argc, char** argv)
     
     print_values_to_text_file(fout);
     print_functions_to_text_file(fout2);
+
+    return 0;
 }
