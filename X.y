@@ -526,6 +526,7 @@ extern char* yytext;
 void yyerror(char* s);
 extern int yylineno;
 
+
 %}
 %union {
     float floatval;

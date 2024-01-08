@@ -93,12 +93,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 518 "p1.y"
+#line 559 "p1.y"
 
-    float floatval;
-    int intval;
-    char* strval;
-    struct AST* tree;
+    float float_value;
+    int int_value;
+    char* string_value;
+    AST* tree;
 
 #line 104 "p1.tab.h"
 
