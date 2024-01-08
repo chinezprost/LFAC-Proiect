@@ -17,6 +17,7 @@ FLOAT -?[1-9][0-9]*\.[0-9]+|-?0\.[0-9]+
 "chr" {yylval.string_value = strdup(yytext); return TYPE;}
 "str" {yylval.string_value = strdup(yytext); return TYPE;}
 "bool" {yylval.string_value = strdup(yytext); return TYPE;}
+"const" {return CONSTANT;}
 "less_equal" {return LESS_EQ;}
 "greater_equal" {return GREATER_EQ;}
 "not_equal" {return NOT_EQ;}
@@ -43,7 +44,7 @@ FLOAT -?[1-9][0-9]*\.[0-9]+|-?0\.[0-9]+
 {ID} {yylval.string_value=strdup(yytext); return ID;}
 {STRING} {yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return STRING;}
 {CHAR} {yylval.string_value = strdup(yytext); yylval.string_value++; yylval.string_value[strlen(yylval.string_value)-1] = 0; return CHAR;}
-"=" {yylval.string_value=strdup(yytext);return ASSIGN;}
+"<-" {yylval.string_value=strdup(yytext);return ASSIGN;}
 {NR} {yylval.int_value=atoi(yytext); return NR;}
 {FLOAT}  {yylval.float_value=atof(yytext); return NR_FLOAT;}
 [ \t] ;

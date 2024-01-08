@@ -99,7 +99,7 @@
 
     void handle_error()
     {
-        std::cout << "An error has occured: " << error_message << '\n';
+        std::cout << '\n';
     }
 
     void insert_table(bool _is_constant, int _array_size, std::string _string, std::string _type, int _int_value, float _float_value, char _char_value, std::string _string_value, bool _is_class, int yylineno)
@@ -126,7 +126,7 @@
                     {
                         std::cout << "The line " << yylineno << ": Variable " << _string << " has been already declared!";
                         handle_error();
-                        exit(0);
+                         ;
                     }
                 }
 
@@ -160,22 +160,7 @@
             {
                 std::cout << "The line " << yylineno << ": Variable " << _s << " hasn't been declared!";
                 handle_error();
-                exit(0);
-            }
-        }
-        else
-        {
-            if(v > 0 && symbol_table[i].array_size == 0)
-            {
-                std::cout << "The line " << yylineno << ": Variable " << _s << " is not an array!";
-                handle_error();
-                exit(0);
-            }
-            else if(v == 0 && symbol_table[i].array_size > 0)
-            {
-                std::cout << "The line " << yylineno << ": Variable " << _s << " is a array!";
-                handle_error();
-                exit(0);
+                 ;
             }
         }
     }
@@ -190,7 +175,7 @@
                 {
                     std::cout << "The line " << yylineno << ": Function " << _s << " is already defined!";
                     handle_error();
-                    exit(0);
+                     ;
                 }
             }
             symbol_table_functions[function_counter].name = _s;
@@ -244,14 +229,14 @@
         {
             std::cout << "The line " << yylineno << ": Function " << _s << " is not defined!";
             handle_error();
-            exit(0);
+             ;
         }
         
         if(_params == symbol_table_functions[i].parameter_types)
         {
             std::cout << "The line " << yylineno << ": Function " << _s << " is not called correctly!";
             handle_error();
-            exit(0);
+             ;
         }
     }
 
@@ -282,7 +267,7 @@
         }
     }
 
-    int get_value(std::string _s, int yylineno)
+    int get_i32_value(std::string _s, int yylineno)
     {
         for(int i = 0; i < variable_counter; i++)
         {
@@ -292,7 +277,7 @@
                 {
                     std::cout << "The line " << yylineno << ": Array " << _s << " is not correct!";
                     handle_error();
-                    exit(0);
+                     ;
                 }
                 //std::cout << "VALOARE ESTE: " << symbol_table[i].var_info.integer_value << '\n';
                 return symbol_table[i].var_info.integer_value;
@@ -325,25 +310,25 @@
 
                 if(type == "chr")
                 {
-                    std::cout << "eroare\n";
+                    std::cout << "Can't assign value with chr.\n";
                 }
                 else
                 if(type == "bool")
                 {
-                    std::cout << "eroare\n";
+                    std::cout << "Can't assign value with bool.\n";
 
                 }
                 else
                 if(type == "str")
                 {
-                    std::cout << "eroare\n";
+                    std::cout << "Can't assign value with string.\n";
 
                 }
                 else 
                 if(type == "i32")
                 {
-                    //std::cout << "TIP: " << get_value(_ast->name, yylineno) << '\n';
-                    return get_value(_ast->name, yylineno);
+                    //std::cout << "TIP: " << get_i32_value(_ast->name, yylineno) << '\n';
+                    return get_i32_value(_ast->name, yylineno);
                 }
             }
             else
@@ -385,7 +370,8 @@
                 }
                 else
                 {
-                    //eroare
+                    std::cout << "Division by 0";
+                    exit(0);
                 }
             }
 
@@ -404,11 +390,11 @@
                 }
                 else
                 {
-                    //eroare
+                    std::cout << "Invalid position in array!\n";
                 }
             }
         }
-        //eroare
+        std::cout << "Invalid array!\n";
     }
 
     void update_table(std::string _name, std::string _type, int _int_value, int yylineno, int _float_value, std::string _string_value)
@@ -546,22 +532,16 @@ extern int yylineno;
 %left '/' '*'
 %%
 
-program_structure: variable_partition bloc                                      {std::cout << "The program is syntactically correct!" << std::endl;} | 
-                   function_partition bloc                                      {std::cout << "The program is syntactically correct!" << std::endl;} | 
-                   class_partition bloc                                         {std::cout << "The program is syntactically correct!" << std::endl;} | 
-                   variable_partition function_partition bloc                   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   function_partition variable_partition bloc                   {std::cout << "The program is syntactically correct!" << std::endl;} | 
-                   variable_partition class_partition bloc                      {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   function_partition class_partition bloc                      {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   class_partition function_partition bloc                      {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   variable_partition function_partition class_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   variable_partition class_partition function_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   function_partition variable_partition class_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   function_partition class_partition variable_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   class_partition variable_partition function_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;} |
-                   class_partition function_partition variable_partition bloc   {std::cout << "The program is syntactically correct!" << std::endl;}
-      ;
+// program_structure: variable_partition main_partition                                      {std::cout << "The program is syntactically correct!" << std::endl;} | 
+//                    function_partition main_partition                                      {std::cout << "The program is syntactically correct!" << std::endl;} | 
+//                    class_partition main_partition                                         {std::cout << "The program is syntactically correct!" << std::endl;} |
+//                    variable_partition program_structure                         | 
+//                    function_partition program_structure                         | 
+//                    class_partition program_structure                            |
+//       ;
 
+program_structure: variable_partition function_partition class_partition main_partition {std::cout << "The program is syntactically correct!" << std::endl;}
+      ;
 
 variable_partition : variable_declaration ';'
            | variable_partition variable_declaration ';'
@@ -632,7 +612,7 @@ id_list :  ID                                { insert_table(0, 0, $1, std::strin
          | ID ASSIGN CHAR ',' id_list        { insert_table(0, 0, $1, std::string("variable"), 0, 0, $3[0], std::string(""), 0, yylineno);}
          ;
       
-bloc : BEGIN_MAIN list END_MAIN
+main_partition : BEGIN_MAIN list END_MAIN
      ;
      
 list : statement ';' 
@@ -649,7 +629,7 @@ statement: ID ASSIGN E  {
                             {
                                 sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                 handle_error();
-                                exit(0);
+                                 ;
                             }
                             int val = Eval($3, yylineno);
                             update_table($1, "i32", val, yylineno, 0, "");
@@ -664,7 +644,7 @@ statement: ID ASSIGN E  {
                                 {
                                     sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                     handle_error();
-                                    exit(0);
+                                     ;
                                 }
                                 int val = Eval($5, yylineno);
                                 update_table(std::string(internal_buffer), "i32", val, yylineno, 0, "");
@@ -675,7 +655,7 @@ statement: ID ASSIGN E  {
                                 {
                                     sprintf(error_message, "Linia %d, type de date diferit", yylineno);
                                     handle_error();
-                                    exit(0);
+                                     ;
                                 }
                                 update_table($1, "f32", 0, yylineno, $3, "");
                               }
@@ -745,7 +725,7 @@ AUX_E : AUX_E '+' AUX_E {
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
                                         handle_error();
-                                        exit(0);
+                                         ;
                                     }
                                     $$ = $1;
                                  }
@@ -754,7 +734,7 @@ AUX_E : AUX_E '+' AUX_E {
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
                                         handle_error();
-                                        exit(0);
+                                         ;
                                     }
                                     $$ = $1;
                                  }
@@ -763,7 +743,7 @@ AUX_E : AUX_E '+' AUX_E {
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
                                         handle_error();
-                                        exit(0);
+                                         ;
                                     }
                                     $$ = $1;
                                  }
@@ -772,7 +752,7 @@ AUX_E : AUX_E '+' AUX_E {
                                     {
                                         sprintf(error_message, "At line: %d, data types are different!", yylineno);
                                         handle_error();
-                                        exit(0);
+                                         ;
                                     }
                                     $$ = $1;
                                  }

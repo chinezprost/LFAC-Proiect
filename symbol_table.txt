@@ -1,10 +1,12 @@
 x i32 3
 x1 i32 700
+i i32 1
 x2 i32 30
 y i32 100
 arr i32 0
 f f32 30
 f1 f32 0
+uaic f1 
 ch chr c
-C1.w i32 0
+C1.w i32 5
 C2.t i32 0
